@@ -6,8 +6,8 @@ pub trait Transaction<Ctx> {
 
     fn run(&self, ctx: &mut Ctx) -> Result<Self::Item, Self::Err>;
 
-    fn boxed(self) -> Box<Transaction<Ctx, Item = Self::Item, Err = Self::Err>>
-        where Self: Sized + 'static
+    fn boxed<'a>(self) -> Box<'a + Transaction<Ctx, Item = Self::Item, Err = Self::Err>>
+        where Self: Sized + 'a
     {
         Box::new(self)
     }
