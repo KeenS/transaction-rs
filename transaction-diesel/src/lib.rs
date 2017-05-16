@@ -1,11 +1,14 @@
+//! A transaction runner for diesel
+
 extern crate diesel;
 extern crate transaction;
 use transaction::Transaction;
 use std::marker::PhantomData;
 use std::ops::Deref;
 
+/// diesel transaction object.
 pub struct DieselContext<'a, Cn: 'a> {
-    conn: &'a Cn,
+    pub conn: &'a Cn,
     _phantom: PhantomData<()>,
 }
 
@@ -26,6 +29,7 @@ impl<'a, Cn: 'a> Deref for DieselContext<'a, Cn> {
     }
 }
 
+/// run a transaction within the given connection.
 pub fn run<'a, Cn, T, E, Tx>(cn: &'a Cn, tx: Tx) -> Result<T, E>
     where Cn: diesel::Connection,
           E: From<diesel::result::Error>,

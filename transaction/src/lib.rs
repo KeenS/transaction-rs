@@ -1,17 +1,29 @@
+//! # Zero-cost transactions in Rust
+//! This crate abstracts over transactions like STM, SQL transactions and so on.
+//! It is also composable via combinators and do DI of transactions.
+
+
 use std::marker::PhantomData;
 
+/// An abstract transaction.
+/// Transactions sharing the same `Ctx` can be composed with combinators.
 pub trait Transaction<Ctx> {
+    /// The return type of the transaction
     type Item;
+    /// The error type of the transaction
     type Err;
 
+    /// Run the transaction. This will called by transaction runner rather than user by hand.
     fn run(&self, ctx: &mut Ctx) -> Result<Self::Item, Self::Err>;
 
+    /// Box the transaction
     fn boxed<'a>(self) -> Box<'a + Transaction<Ctx, Item = Self::Item, Err = Self::Err>>
         where Self: Sized + 'a
     {
         Box::new(self)
     }
 
+    /// Take the previous result of computation and do another computation
     fn then<F, B, Tx2>(self, f: F) -> Then<Self, F, Tx2>
         where Tx2: Transaction<Ctx, Item = B, Err = Self::Err>,
               F: Fn(Result<Self::Item, Self::Err>) -> Tx2,
@@ -24,6 +36,7 @@ pub trait Transaction<Ctx> {
         }
     }
 
+    /// transform the previous successful value
     fn map<F, B>(self, f: F) -> Map<Self, F>
         where F: Fn(Self::Item) -> B,
               Self: Sized
@@ -33,6 +46,7 @@ pub trait Transaction<Ctx> {
 
 
 
+    /// Take the previous successful value of computation and do another computation
     fn and_then<F, B>(self, f: F) -> AndThen<Self, F, B>
         where B: Transaction<Ctx, Err = Self::Err>,
               F: Fn(Self::Item) -> B,
@@ -45,6 +59,7 @@ pub trait Transaction<Ctx> {
         }
     }
 
+    /// transform the previous error value
     fn map_err<F, B>(self, f: F) -> MapErr<Self, F>
         where F: Fn(Self::Err) -> B,
               Self: Sized
@@ -53,6 +68,8 @@ pub trait Transaction<Ctx> {
     }
 
 
+    /// Take the previous error value of computation and do another computation.
+    /// This may be used falling back
     fn or_else<F, B>(self, f: F) -> OrElse<Self, F, B>
         where B: Transaction<Ctx, Item = Self::Item>,
               F: Fn(Self::Err) -> B,
@@ -68,6 +85,7 @@ pub trait Transaction<Ctx> {
     // retry
 }
 
+/// Not used for now.
 pub trait IntoTransaction {
     type Tx: Transaction<Self::Ctx, Item = Self::Item, Err = Self::Err>;
     type Ctx;
@@ -77,36 +95,37 @@ pub trait IntoTransaction {
     fn into_transaction(self) -> Self::Tx;
 }
 
+/// Take a result and make a leaf transaction value.
 pub fn result<T, E>(r: Result<T, E>) -> TxResult<T, E> {
     TxResult { r: r }
 }
 
+/// make a successful transaction value.
 pub fn ok<T, E>(t: T) -> TxResult<T, E> {
     TxResult { r: Ok(t) }
 }
 
+/// make a error transaction value.
 pub fn err<T, E>(e: E) -> TxResult<T, E> {
     TxResult { r: Err(e) }
 }
 
+/// lazy evaluated transaction value.
+/// Note that inner function can be called many times.
 pub fn lazy<F, T, E>(f: F) -> Lazy<F>
     where F: Fn() -> Result<T, E>
 {
     Lazy { f: f }
 }
 
+/// Receive the context from the executing transaction and perform computation.
 pub fn with_ctx<Ctx, F, T, E>(f: F) -> WithCtx<F>
     where F: Fn(&mut Ctx) -> Result<T, E>
 {
     WithCtx { f: f }
 }
 
-#[derive(Debug)]
-pub struct Map<Tx, F> {
-    tx: Tx,
-    f: F,
-}
-
+/// The result of `then`
 #[derive(Debug)]
 pub struct Then<Tx1, F, Tx2> {
     tx: Tx1,
@@ -114,7 +133,15 @@ pub struct Then<Tx1, F, Tx2> {
     _phantom: PhantomData<Tx2>,
 }
 
+/// The result of `map`
+#[derive(Debug)]
+pub struct Map<Tx, F> {
+    tx: Tx,
+    f: F,
+}
 
+
+/// The result of `and_then`
 #[derive(Debug)]
 pub struct AndThen<Tx1, F, Tx2> {
     tx: Tx1,
@@ -123,12 +150,14 @@ pub struct AndThen<Tx1, F, Tx2> {
 }
 
 
+/// The result of `map_err`
 #[derive(Debug)]
 pub struct MapErr<Tx, F> {
     tx: Tx,
     f: F,
 }
 
+/// The result of `or_else`
 #[derive(Debug)]
 pub struct OrElse<Tx1, F, Tx2> {
     tx: Tx1,
@@ -136,16 +165,19 @@ pub struct OrElse<Tx1, F, Tx2> {
     _phantom: PhantomData<Tx2>,
 }
 
+/// A leaf transaction
 #[derive(Debug)]
 pub struct TxResult<T, E> {
     r: Result<T, E>,
 }
 
+/// The result of `lazy`
 #[derive(Debug)]
 pub struct Lazy<F> {
     f: F,
 }
 
+/// The result of `with_ctx`
 #[derive(Debug)]
 pub struct WithCtx<F> {
     f: F,
