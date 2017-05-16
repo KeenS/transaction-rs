@@ -1,0 +1,8 @@
+[package]
+authors = ["Sunrin SHIMURA (keen) <3han5chou7@gmail.com>"]
+name = "transaction-stm"
+version = "0.1.0"
+
+[dependencies]
+stm = "0.2.4"
+transaction = {path = "../transaction"}

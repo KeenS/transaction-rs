@@ -1,0 +1,2 @@
+[workspace]
+members = ["transaction", "transaction-diesel", "transaction-stm"]

@@ -1,0 +1,8 @@
+[package]
+authors = ["Sunrin SHIMURA (keen) <3han5chou7@gmail.com>"]
+name = "transaction-diesel"
+version = "0.1.0"
+
+[dependencies]
+diesel = "0.12.1"
+transaction = {path = "../transaction"}
