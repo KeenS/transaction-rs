@@ -89,6 +89,46 @@ pub trait Transaction<Ctx> {
         }
     }
 
+    /// Abort the transaction
+    fn abort<F>(self, f: F) -> Abort<Self, F>
+        where F: Fn(Self::Item) -> Self::Err,
+              Self: Sized
+    {
+        Abort { tx: self, f: f }
+    }
+
+    /// Try to abort the transaction
+    fn try_abort<F, B>(self, f: F) -> TryAbort<Self, F, B>
+        where F: Fn(Self::Item) -> Result<B, Self::Err>,
+              Self: Sized
+    {
+        TryAbort {
+            tx: self,
+            f: f,
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Recover the transaction
+    fn recover<F>(self, f: F) -> Recover<Self, F>
+        where F: Fn(Self::Item) -> Self::Err,
+              Self: Sized
+    {
+        Recover { tx: self, f: f }
+    }
+
+    /// Try to recover the transaction
+    fn try_recover<F, B>(self, f: F) -> TryRecover<Self, F, B>
+        where F: Fn(Self::Item) -> Result<B, Self::Err>,
+              Self: Sized
+    {
+        TryRecover {
+            tx: self,
+            f: f,
+            _phantom: PhantomData,
+        }
+    }
+
     // retry
 }
 
@@ -172,6 +212,38 @@ pub struct OrElse<Tx1, F, Tx2> {
     f: F,
     _phantom: PhantomData<Tx2>,
 }
+
+/// The result of `abort`
+#[derive(Debug)]
+pub struct Abort<Tx, F> {
+    tx: Tx,
+    f: F,
+}
+
+/// The result of `try_abort`
+#[derive(Debug)]
+pub struct TryAbort<Tx, F, B> {
+    tx: Tx,
+    f: F,
+    _phantom: PhantomData<B>,
+}
+
+
+/// The result of `recover`
+#[derive(Debug)]
+pub struct Recover<Tx, F> {
+    tx: Tx,
+    f: F,
+}
+
+/// The result of `try_recover`
+#[derive(Debug)]
+pub struct TryRecover<Tx, F, B> {
+    tx: Tx,
+    f: F,
+    _phantom: PhantomData<B>,
+}
+
 
 /// A leaf transaction
 #[derive(Debug)]
@@ -259,6 +331,73 @@ impl<Ctx, Tx, Tx2, F> Transaction<Ctx> for OrElse<Tx, F, Tx2>
     fn run(&self, ctx: &mut Ctx) -> Result<Self::Item, Self::Err> {
         let &OrElse { ref tx, ref f, .. } = self;
         tx.run(ctx).or_else(|item| f(item).run(ctx))
+    }
+}
+
+
+impl<Ctx, Tx, F> Transaction<Ctx> for Abort<Tx, F>
+    where Tx: Transaction<Ctx>,
+          F: Fn(Tx::Item) -> Tx::Err
+{
+    type Item = Tx::Item;
+    type Err = Tx::Err;
+
+    fn run(&self, ctx: &mut Ctx) -> Result<Self::Item, Self::Err> {
+        let &Abort { ref tx, ref f } = self;
+        match tx.run(ctx) {
+            Ok(r) => Err(f(r)),
+            e @ Err(_) => e,
+        }
+    }
+}
+
+impl<Ctx, Tx, F, B> Transaction<Ctx> for TryAbort<Tx, F, B>
+    where Tx: Transaction<Ctx>,
+          F: Fn(Tx::Item) -> Result<B, Tx::Err>
+{
+    type Item = B;
+    type Err = Tx::Err;
+
+    fn run(&self, ctx: &mut Ctx) -> Result<Self::Item, Self::Err> {
+        let &TryAbort { ref tx, ref f, .. } = self;
+        match tx.run(ctx) {
+            Ok(r) => f(r),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+
+
+impl<Ctx, Tx, F> Transaction<Ctx> for Recover<Tx, F>
+    where Tx: Transaction<Ctx>,
+          F: Fn(Tx::Err) -> Tx::Item
+{
+    type Item = Tx::Item;
+    type Err = Tx::Err;
+
+    fn run(&self, ctx: &mut Ctx) -> Result<Self::Item, Self::Err> {
+        let &Recover { ref tx, ref f } = self;
+        match tx.run(ctx) {
+            r @ Ok(_) => r,
+            Err(e) => Ok(f(e)),
+        }
+    }
+}
+
+impl<Ctx, Tx, F, B> Transaction<Ctx> for TryRecover<Tx, F, B>
+    where Tx: Transaction<Ctx>,
+          F: Fn(Tx::Err) -> Result<Tx::Item, B>
+{
+    type Item = Tx::Item;
+    type Err = B;
+
+    fn run(&self, ctx: &mut Ctx) -> Result<Self::Item, Self::Err> {
+        let &TryRecover { ref tx, ref f, .. } = self;
+        match tx.run(ctx) {
+            Ok(r) => Ok(r),
+            Err(e) => f(e),
+        }
     }
 }
 
