@@ -20,14 +20,14 @@ impl<'a, Cn> DieselContext<'a, Cn> {
         }
     }
 
-    fn conn(&self) -> &Cn {
+    fn conn(&self) -> &'a Cn {
         &self.conn
     }
 }
 
 /// Receive the connection from the executing transaction and perform computation.
-pub fn with_conn<Conn, F, T, E>(f: F) -> WithConn<Conn, F>
-    where F: Fn(&Conn) -> Result<T, E>
+pub fn with_conn<'a, Conn: 'a, F, T, E>(f: F) -> WithConn<Conn, F>
+    where F: Fn(&'a Conn) -> Result<T, E>
 {
     WithConn {
         f: f,
@@ -42,8 +42,8 @@ pub struct WithConn<Conn, F> {
     _phantom: PhantomData<Conn>,
 }
 
-impl<'a, Conn, T, E, F> Transaction<DieselContext<'a, Conn>> for WithConn<Conn, F>
-    where F: Fn(&Conn) -> Result<T, E>
+impl<'a, Conn: 'a, T, E, F> Transaction<DieselContext<'a, Conn>> for WithConn<Conn, F>
+    where F: Fn(&'a Conn) -> Result<T, E>
 {
     type Item = T;
     type Err = E;
