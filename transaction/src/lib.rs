@@ -17,7 +17,7 @@ pub trait Transaction<Ctx> {
     fn run(&self, ctx: &mut Ctx) -> Result<Self::Item, Self::Err>;
 
     /// Box the transaction
-    fn boxed<'a>(self) -> Box<'a + Transaction<Ctx, Item = Self::Item, Err = Self::Err>>
+    fn boxed<'a>(self) -> Box<Transaction<Ctx, Item = Self::Item, Err = Self::Err> + 'a>
         where Self: Sized + 'a
     {
         Box::new(self)
