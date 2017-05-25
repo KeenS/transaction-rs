@@ -5,6 +5,13 @@
 
 use std::marker::PhantomData;
 
+#[cfg(feature="mdo")]
+pub mod mdo;
+
+pub mod prelude {
+    pub use super::{Transaction, result, ok, err, lazy, with_ctx};
+}
+
 /// An abstract transaction.
 /// Transactions sharing the same `Ctx` can be composed with combinators.
 pub trait Transaction<Ctx> {
@@ -94,6 +101,7 @@ pub trait IntoTransaction {
 
     fn into_transaction(self) -> Self::Tx;
 }
+
 
 /// Take a result and make a leaf transaction value.
 pub fn result<T, E>(r: Result<T, E>) -> TxResult<T, E> {
