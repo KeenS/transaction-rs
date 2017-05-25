@@ -2,17 +2,16 @@
 
 extern crate diesel;
 extern crate transaction;
-use transaction::Transaction;
+use transaction::*;
 use std::marker::PhantomData;
-use std::ops::Deref;
 
 /// diesel transaction object.
 pub struct DieselContext<'a, Cn: 'a> {
-    pub conn: &'a Cn,
+    conn: &'a Cn,
     _phantom: PhantomData<()>,
 }
 
-impl<'a, Cn: 'a> DieselContext<'a, Cn> {
+impl<'a, Cn> DieselContext<'a, Cn> {
     // never pub this function
     fn new(conn: &'a Cn) -> Self {
         DieselContext {
@@ -20,14 +19,40 @@ impl<'a, Cn: 'a> DieselContext<'a, Cn> {
             _phantom: PhantomData,
         }
     }
-}
 
-impl<'a, Cn: 'a> Deref for DieselContext<'a, Cn> {
-    type Target = Cn;
-    fn deref(&self) -> &Self::Target {
-        self.conn
+    fn conn(&self) -> &Cn {
+        &self.conn
     }
 }
+
+/// Receive the connection from the executing transaction and perform computation.
+pub fn with_conn<Conn, F, T, E>(f: F) -> WithConn<Conn, F>
+    where F: Fn(&Conn) -> Result<T, E>
+{
+    WithConn {
+        f: f,
+        _phantom: PhantomData,
+    }
+}
+
+/// The result of `with_conn`
+#[derive(Debug)]
+pub struct WithConn<Conn, F> {
+    f: F,
+    _phantom: PhantomData<Conn>,
+}
+
+impl<'a, Conn, T, E, F> Transaction<DieselContext<'a, Conn>> for WithConn<Conn, F>
+    where F: Fn(&Conn) -> Result<T, E>
+{
+    type Item = T;
+    type Err = E;
+    fn run(&self, ctx: &mut DieselContext<'a, Conn>) -> Result<Self::Item, Self::Err> {
+        (self.f)(ctx.conn())
+    }
+}
+
+
 
 /// run a transaction within the given connection.
 pub fn run<'a, Cn, T, E, Tx>(cn: &'a Cn, tx: Tx) -> Result<T, E>
@@ -35,6 +60,6 @@ pub fn run<'a, Cn, T, E, Tx>(cn: &'a Cn, tx: Tx) -> Result<T, E>
           E: From<diesel::result::Error>,
           Tx: Transaction<DieselContext<'a, Cn>, Item = T, Err = E>
 {
-    let mut cn2 = DieselContext::new(cn.clone());
-    cn.transaction(|| tx.run(&mut cn2))
+    cn.clone()
+        .transaction(|| tx.run(&mut DieselContext::new(cn)))
 }
