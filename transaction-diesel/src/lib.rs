@@ -5,6 +5,28 @@ extern crate transaction;
 use transaction::*;
 use std::marker::PhantomData;
 
+/// run the given function insed a transaction using the given connection.
+pub fn run<'a, Cn, T, E, Tx>(cn: &'a Cn, tx: Tx) -> Result<T, E>
+    where Cn: diesel::Connection,
+          E: From<diesel::result::Error>,
+          Tx: Transaction<DieselContext<'a, Cn>, Item = T, Err = E>
+{
+    cn.clone()
+        .transaction(|| tx.run(&mut DieselContext::new(cn)))
+}
+
+/// run the given function insed a transaction using the given connection but do not commit it.
+/// Panics if the given function returns an Err.
+/// This is usefull for testing
+pub fn test_run<'a, Cn, T, E, Tx>(cn: &'a Cn, tx: Tx) -> T
+    where Cn: diesel::Connection,
+          E: From<diesel::result::Error>,
+          Tx: Transaction<DieselContext<'a, Cn>, Item = T, Err = E>
+{
+    cn.clone()
+        .test_transaction(|| tx.run(&mut DieselContext::new(cn)))
+}
+
 /// diesel transaction object.
 pub struct DieselContext<'a, Cn: 'a> {
     conn: &'a Cn,
@@ -50,16 +72,4 @@ impl<'a, Conn: 'a, T, E, F> Transaction<DieselContext<'a, Conn>> for WithConn<Co
     fn run(&self, ctx: &mut DieselContext<'a, Conn>) -> Result<Self::Item, Self::Err> {
         (self.f)(ctx.conn())
     }
-}
-
-
-
-/// run a transaction within the given connection.
-pub fn run<'a, Cn, T, E, Tx>(cn: &'a Cn, tx: Tx) -> Result<T, E>
-    where Cn: diesel::Connection,
-          E: From<diesel::result::Error>,
-          Tx: Transaction<DieselContext<'a, Cn>, Item = T, Err = E>
-{
-    cn.clone()
-        .transaction(|| tx.run(&mut DieselContext::new(cn)))
 }
