@@ -90,11 +90,15 @@ pub trait Transaction<Ctx> {
     }
 
     /// Abort the transaction
-    fn abort<F>(self, f: F) -> Abort<Self, F>
+    fn abort<T, F>(self, f: F) -> Abort<Self, T, F>
         where F: Fn(Self::Item) -> Self::Err,
               Self: Sized
     {
-        Abort { tx: self, f: f }
+        Abort {
+            tx: self,
+            f: f,
+            _phantom: PhantomData,
+        }
     }
 
     /// Try to abort the transaction
@@ -110,11 +114,15 @@ pub trait Transaction<Ctx> {
     }
 
     /// Recover the transaction
-    fn recover<F>(self, f: F) -> Recover<Self, F>
+    fn recover<T, F>(self, f: F) -> Recover<Self, T, F>
         where F: Fn(Self::Item) -> Self::Err,
               Self: Sized
     {
-        Recover { tx: self, f: f }
+        Recover {
+            tx: self,
+            f: f,
+            _phantom: PhantomData,
+        }
     }
 
     /// Try to recover the transaction
@@ -215,9 +223,10 @@ pub struct OrElse<Tx1, F, Tx2> {
 
 /// The result of `abort`
 #[derive(Debug)]
-pub struct Abort<Tx, F> {
+pub struct Abort<Tx, T, F> {
     tx: Tx,
     f: F,
+    _phantom: PhantomData<T>,
 }
 
 /// The result of `try_abort`
@@ -231,9 +240,10 @@ pub struct TryAbort<Tx, F, B> {
 
 /// The result of `recover`
 #[derive(Debug)]
-pub struct Recover<Tx, F> {
+pub struct Recover<Tx, T, F> {
     tx: Tx,
     f: F,
+    _phantom: PhantomData<T>,
 }
 
 /// The result of `try_recover`
@@ -335,18 +345,18 @@ impl<Ctx, Tx, Tx2, F> Transaction<Ctx> for OrElse<Tx, F, Tx2>
 }
 
 
-impl<Ctx, Tx, F> Transaction<Ctx> for Abort<Tx, F>
+impl<Ctx, Tx, F, T> Transaction<Ctx> for Abort<Tx, T, F>
     where Tx: Transaction<Ctx>,
           F: Fn(Tx::Item) -> Tx::Err
 {
-    type Item = Tx::Item;
+    type Item = T;
     type Err = Tx::Err;
 
     fn run(&self, ctx: &mut Ctx) -> Result<Self::Item, Self::Err> {
-        let &Abort { ref tx, ref f } = self;
+        let &Abort { ref tx, ref f, .. } = self;
         match tx.run(ctx) {
             Ok(r) => Err(f(r)),
-            e @ Err(_) => e,
+            Err(e) => Err(e),
         }
     }
 }
@@ -369,7 +379,7 @@ impl<Ctx, Tx, F, B> Transaction<Ctx> for TryAbort<Tx, F, B>
 
 
 
-impl<Ctx, Tx, F> Transaction<Ctx> for Recover<Tx, F>
+impl<Ctx, Tx, F, T> Transaction<Ctx> for Recover<Tx, T, F>
     where Tx: Transaction<Ctx>,
           F: Fn(Tx::Err) -> Tx::Item
 {
@@ -377,7 +387,7 @@ impl<Ctx, Tx, F> Transaction<Ctx> for Recover<Tx, F>
     type Err = Tx::Err;
 
     fn run(&self, ctx: &mut Ctx) -> Result<Self::Item, Self::Err> {
-        let &Recover { ref tx, ref f } = self;
+        let &Recover { ref tx, ref f, .. } = self;
         match tx.run(ctx) {
             r @ Ok(_) => r,
             Err(e) => Ok(f(e)),
