@@ -10,6 +10,6 @@ pub fn bind<Ctx, Tx, F, B>(tx: Tx, f: F) -> ::AndThen<Tx, F, B>
 }
 
 /// return for Transaction<Ctx, Item = T, Err = E>, equivalent to `ok(x)`
-pub fn ret<T, E>(x: T) -> ::TxResult<T, E> {
+pub fn ret<T, E>(x: T) -> ::TxOk<T, E> {
     ok(x)
 }

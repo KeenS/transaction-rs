@@ -157,13 +157,19 @@ pub fn result<T, E>(r: Result<T, E>) -> TxResult<T, E> {
 }
 
 /// make a successful transaction value.
-pub fn ok<T, E>(t: T) -> TxResult<T, E> {
-    TxResult { r: Ok(t) }
+pub fn ok<T, E>(t: T) -> TxOk<T, E> {
+    TxOk {
+        ok: t,
+        _phantom: PhantomData,
+    }
 }
 
 /// make a error transaction value.
-pub fn err<T, E>(e: E) -> TxResult<T, E> {
-    TxResult { r: Err(e) }
+pub fn err<T, E>(e: E) -> TxErr<T, E> {
+    TxErr {
+        err: e,
+        _phantom: PhantomData,
+    }
 }
 
 /// lazy evaluated transaction value.
@@ -255,10 +261,24 @@ pub struct TryRecover<Tx, F, B> {
 }
 
 
-/// A leaf transaction
+/// The result of `result`
 #[derive(Debug)]
 pub struct TxResult<T, E> {
     r: Result<T, E>,
+}
+
+/// The result of `ok`
+#[derive(Debug)]
+pub struct TxOk<T, E> {
+    ok: T,
+    _phantom: PhantomData<E>,
+}
+
+/// The result of `err`
+#[derive(Debug)]
+pub struct TxErr<T, E> {
+    err: E,
+    _phantom: PhantomData<T>,
 }
 
 /// The result of `lazy`
@@ -422,6 +442,27 @@ impl<Ctx, T, E> Transaction<Ctx> for TxResult<T, E>
         self.r.clone()
     }
 }
+
+impl<Ctx, T, E> Transaction<Ctx> for TxOk<T, E>
+    where T: Clone
+{
+    type Item = T;
+    type Err = E;
+    fn run(&self, _ctx: &mut Ctx) -> Result<Self::Item, Self::Err> {
+        Ok(self.ok.clone())
+    }
+}
+
+impl<Ctx, T, E> Transaction<Ctx> for TxErr<T, E>
+    where E: Clone
+{
+    type Item = T;
+    type Err = E;
+    fn run(&self, _ctx: &mut Ctx) -> Result<Self::Item, Self::Err> {
+        Err(self.err.clone())
+    }
+}
+
 
 impl<Ctx, T, E, F> Transaction<Ctx> for Lazy<F>
     where F: Fn() -> Result<T, E>
