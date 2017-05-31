@@ -137,6 +137,42 @@ pub trait Transaction<Ctx> {
         }
     }
 
+    /// join 2 indepndant transactions
+    fn join<B>(self, b: B) -> Join<Self, B>
+        where B: Transaction<Ctx, Err = Self::Err>,
+              Self: Sized
+    {
+        Join { tx1: self, tx2: b }
+    }
+
+    /// join 3 indepndant transactions
+    fn join3<B, C>(self, b: B, c: C) -> Join3<Self, B, C>
+        where B: Transaction<Ctx, Err = Self::Err>,
+              C: Transaction<Ctx, Err = Self::Err>,
+              Self: Sized
+    {
+        Join3 {
+            tx1: self,
+            tx2: b,
+            tx3: c,
+        }
+    }
+
+    /// join 4 indepndant transactions
+    fn join4<B, C, D>(self, b: B, c: C, d: D) -> Join4<Self, B, C, D>
+        where B: Transaction<Ctx, Err = Self::Err>,
+              C: Transaction<Ctx, Err = Self::Err>,
+              D: Transaction<Ctx, Err = Self::Err>,
+              Self: Sized
+    {
+        Join4 {
+            tx1: self,
+            tx2: b,
+            tx3: c,
+            tx4: d,
+        }
+    }
+    // repeat
     // retry
 }
 
@@ -258,6 +294,30 @@ pub struct TryRecover<Tx, F, B> {
     tx: Tx,
     f: F,
     _phantom: PhantomData<B>,
+}
+
+/// The result of `join`
+#[derive(Debug)]
+pub struct Join<Tx1, Tx2> {
+    tx1: Tx1,
+    tx2: Tx2,
+}
+
+/// The result of `join3`
+#[derive(Debug)]
+pub struct Join3<Tx1, Tx2, Tx3> {
+    tx1: Tx1,
+    tx2: Tx2,
+    tx3: Tx3,
+}
+
+/// The result of `join4`
+#[derive(Debug)]
+pub struct Join4<Tx1, Tx2, Tx3, Tx4> {
+    tx1: Tx1,
+    tx2: Tx2,
+    tx3: Tx3,
+    tx4: Tx4,
 }
 
 
@@ -427,6 +487,69 @@ impl<Ctx, Tx, F, B> Transaction<Ctx> for TryRecover<Tx, F, B>
         match tx.run(ctx) {
             Ok(r) => Ok(r),
             Err(e) => f(e),
+        }
+    }
+}
+
+impl<Ctx, Tx1, Tx2> Transaction<Ctx> for Join<Tx1, Tx2>
+    where Tx1: Transaction<Ctx>,
+          Tx2: Transaction<Ctx, Err = Tx1::Err>
+{
+    type Item = (Tx1::Item, Tx2::Item);
+    type Err = Tx1::Err;
+
+    fn run(&self, ctx: &mut Ctx) -> Result<Self::Item, Self::Err> {
+        let &Join { ref tx1, ref tx2 } = self;
+        match (tx1.run(ctx), tx2.run(ctx)) {
+            (Ok(r1), Ok(r2)) => Ok((r1, r2)),
+            (Err(e), _) | (_, Err(e)) => Err(e),
+        }
+    }
+}
+
+impl<Ctx, Tx1, Tx2, Tx3> Transaction<Ctx> for Join3<Tx1, Tx2, Tx3>
+    where Tx1: Transaction<Ctx>,
+          Tx2: Transaction<Ctx, Err = Tx1::Err>,
+          Tx3: Transaction<Ctx, Err = Tx1::Err>
+{
+    type Item = (Tx1::Item, Tx2::Item, Tx3::Item);
+    type Err = Tx1::Err;
+
+    fn run(&self, ctx: &mut Ctx) -> Result<Self::Item, Self::Err> {
+        let &Join3 {
+                 ref tx1,
+                 ref tx2,
+                 ref tx3,
+             } = self;
+        match (tx1.run(ctx), tx2.run(ctx), tx3.run(ctx)) {
+            (Ok(r1), Ok(r2), Ok(r3)) => Ok((r1, r2, r3)),
+            (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => Err(e),
+        }
+    }
+}
+
+impl<Ctx, Tx1, Tx2, Tx3, Tx4> Transaction<Ctx> for Join4<Tx1, Tx2, Tx3, Tx4>
+    where Tx1: Transaction<Ctx>,
+          Tx2: Transaction<Ctx, Err = Tx1::Err>,
+          Tx3: Transaction<Ctx, Err = Tx1::Err>,
+          Tx4: Transaction<Ctx, Err = Tx1::Err>
+{
+    type Item = (Tx1::Item, Tx2::Item, Tx3::Item, Tx4::Item);
+    type Err = Tx1::Err;
+
+    fn run(&self, ctx: &mut Ctx) -> Result<Self::Item, Self::Err> {
+        let &Join4 {
+                 ref tx1,
+                 ref tx2,
+                 ref tx3,
+                 ref tx4,
+             } = self;
+        match (tx1.run(ctx), tx2.run(ctx), tx3.run(ctx), tx4.run(ctx)) {
+            (Ok(r1), Ok(r2), Ok(r3), Ok(r4)) => Ok((r1, r2, r3, r4)),
+            (Err(e), _, _, _) |
+            (_, Err(e), _, _) |
+            (_, _, Err(e), _) |
+            (_, _, _, Err(e)) => Err(e),
         }
     }
 }
