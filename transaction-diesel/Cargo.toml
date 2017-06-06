@@ -8,7 +8,7 @@ readme = "README.md"
 documentation = "http://docs.rs/transaction-diesel/0.1.0/transaction-diesel/"
 repository = "https://github.com/KeenS/transaction"
 keywords = ["transaction", "diesel"]
-categories = ["Rust patterns"]
+categories = ["rust-patterns"]
 
 [dependencies]
 diesel = "0.12.1"

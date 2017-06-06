@@ -8,7 +8,7 @@ readme = "README.md"
 documentation = "http://docs.rs/transaction-stm/0.1.0/transaction-stm/"
 repository = "https://github.com/KeenS/transaction"
 keywords = ["transaction", "stm"]
-categories = ["Rust patterns", "concurrency"]
+categories = ["rust-patterns", "concurrency"]
 
 [dependencies]
 stm = "0.2.4"
