@@ -1,7 +1,14 @@
 [package]
+authors = ["Sunrin SHIMURA (keen) <3han5chou7@gmail.com>"]
 name = "transaction"
 version = "0.1.0"
-authors = ["Sunrin SHIMURA (keen) <3han5chou7@gmail.com>"]
+license = "MIT"
+description = "transaction abstraction library (a.k.a. transaction monad)"
+readme = "README.md"
+documentation = "http://docs.rs/transaction/0.1.0/transaction/"
+repository = "https://github.com/KeenS/transaction"
+keywords = ["transaction"]
+categories = ["Rust patterns"]
 
 [dependencies]
 mdo = {version = "0.3.0", optional = true}

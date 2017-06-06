@@ -2,7 +2,14 @@
 authors = ["Sunrin SHIMURA (keen) <3han5chou7@gmail.com>"]
 name = "transaction-diesel"
 version = "0.1.0"
+license = "MIT"
+description = "transaction abstraction of diesel"
+readme = "README.md"
+documentation = "http://docs.rs/transaction-diesel/0.1.0/transaction-diesel/"
+repository = "https://github.com/KeenS/transaction"
+keywords = ["transaction", "diesel"]
+categories = ["Rust patterns"]
 
 [dependencies]
 diesel = "0.12.1"
-transaction = {path = "../transaction"}
+transaction = "0.1.0"

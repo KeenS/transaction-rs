@@ -2,7 +2,14 @@
 authors = ["Sunrin SHIMURA (keen) <3han5chou7@gmail.com>"]
 name = "transaction-stm"
 version = "0.1.0"
+license = "MIT"
+description = "transaction abstraction of stm"
+readme = "README.md"
+documentation = "http://docs.rs/transaction-stm/0.1.0/transaction-stm/"
+repository = "https://github.com/KeenS/transaction"
+keywords = ["transaction", "stm"]
+categories = ["Rust patterns", "concurrency"]
 
 [dependencies]
 stm = "0.2.4"
-transaction = {path = "../transaction"}
+transaction = "0.1.0"
