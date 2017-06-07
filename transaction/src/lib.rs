@@ -236,6 +236,7 @@ pub fn with_ctx<Ctx, F, T, E>(f: F) -> WithCtx<Ctx, F>
 
 /// The result of `then`
 #[derive(Debug)]
+#[must_use]
 pub struct Then<Tx1, F, Tx2> {
     tx: Tx1,
     f: F,
@@ -244,6 +245,7 @@ pub struct Then<Tx1, F, Tx2> {
 
 /// The result of `map`
 #[derive(Debug)]
+#[must_use]
 pub struct Map<Tx, F> {
     tx: Tx,
     f: F,
@@ -252,6 +254,7 @@ pub struct Map<Tx, F> {
 
 /// The result of `and_then`
 #[derive(Debug)]
+#[must_use]
 pub struct AndThen<Tx1, F, Tx2> {
     tx: Tx1,
     f: F,
@@ -261,6 +264,7 @@ pub struct AndThen<Tx1, F, Tx2> {
 
 /// The result of `map_err`
 #[derive(Debug)]
+#[must_use]
 pub struct MapErr<Tx, F> {
     tx: Tx,
     f: F,
@@ -268,6 +272,7 @@ pub struct MapErr<Tx, F> {
 
 /// The result of `or_else`
 #[derive(Debug)]
+#[must_use]
 pub struct OrElse<Tx1, F, Tx2> {
     tx: Tx1,
     f: F,
@@ -276,6 +281,7 @@ pub struct OrElse<Tx1, F, Tx2> {
 
 /// The result of `abort`
 #[derive(Debug)]
+#[must_use]
 pub struct Abort<Tx, T, F> {
     tx: Tx,
     f: F,
@@ -284,6 +290,7 @@ pub struct Abort<Tx, T, F> {
 
 /// The result of `try_abort`
 #[derive(Debug)]
+#[must_use]
 pub struct TryAbort<Tx, F, B> {
     tx: Tx,
     f: F,
@@ -293,6 +300,7 @@ pub struct TryAbort<Tx, F, B> {
 
 /// The result of `recover`
 #[derive(Debug)]
+#[must_use]
 pub struct Recover<Tx, T, F> {
     tx: Tx,
     f: F,
@@ -301,6 +309,7 @@ pub struct Recover<Tx, T, F> {
 
 /// The result of `try_recover`
 #[derive(Debug)]
+#[must_use]
 pub struct TryRecover<Tx, F, B> {
     tx: Tx,
     f: F,
@@ -309,6 +318,7 @@ pub struct TryRecover<Tx, F, B> {
 
 /// The result of `join`
 #[derive(Debug)]
+#[must_use]
 pub struct Join<Tx1, Tx2> {
     tx1: Tx1,
     tx2: Tx2,
@@ -316,6 +326,7 @@ pub struct Join<Tx1, Tx2> {
 
 /// The result of `join3`
 #[derive(Debug)]
+#[must_use]
 pub struct Join3<Tx1, Tx2, Tx3> {
     tx1: Tx1,
     tx2: Tx2,
@@ -324,6 +335,7 @@ pub struct Join3<Tx1, Tx2, Tx3> {
 
 /// The result of `join4`
 #[derive(Debug)]
+#[must_use]
 pub struct Join4<Tx1, Tx2, Tx3, Tx4> {
     tx1: Tx1,
     tx2: Tx2,
@@ -334,6 +346,7 @@ pub struct Join4<Tx1, Tx2, Tx3, Tx4> {
 
 /// The result of `result`
 #[derive(Debug)]
+#[must_use]
 pub struct TxResult<Ctx, T, E> {
     r: Result<T, E>,
     _phantom: PhantomData<Ctx>,
@@ -341,6 +354,7 @@ pub struct TxResult<Ctx, T, E> {
 
 /// The result of `ok`
 #[derive(Debug)]
+#[must_use]
 pub struct TxOk<Ctx, T, E> {
     ok: T,
     _phantom: PhantomData<(Ctx, E)>,
@@ -348,6 +362,7 @@ pub struct TxOk<Ctx, T, E> {
 
 /// The result of `err`
 #[derive(Debug)]
+#[must_use]
 pub struct TxErr<Ctx, T, E> {
     err: E,
     _phantom: PhantomData<(Ctx, T)>,
@@ -355,6 +370,7 @@ pub struct TxErr<Ctx, T, E> {
 
 /// The result of `lazy`
 #[derive(Debug)]
+#[must_use]
 pub struct Lazy<Ctx, F> {
     f: F,
     _phantom: PhantomData<Ctx>,
@@ -362,6 +378,7 @@ pub struct Lazy<Ctx, F> {
 
 /// The result of `with_ctx`
 #[derive(Debug)]
+#[must_use]
 pub struct WithCtx<Ctx, F> {
     f: F,
     _phantom: PhantomData<Ctx>,
