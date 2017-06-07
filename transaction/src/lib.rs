@@ -14,6 +14,7 @@ pub mod prelude {
 
 /// An abstract transaction.
 /// Transactions sharing the same `Ctx` can be composed with combinators.
+#[must_use]
 pub trait Transaction {
     type Ctx;
     /// The return type of the transaction
