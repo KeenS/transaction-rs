@@ -1,15 +1,15 @@
 use super::prelude::*;
 
-/// bind for Transaction<Ctx>, equivalent to `tx.and_then(f)
-pub fn bind<Ctx, Tx, F, B>(tx: Tx, f: F) -> ::AndThen<Tx, F, B>
-    where B: Transaction<Ctx, Err = Tx::Err>,
+/// bind for Transaction>, equivalent to `tx.and_then(f)
+pub fn bind<Tx, F, B>(tx: Tx, f: F) -> ::AndThen<Tx, F, B>
+    where B: Transaction<Ctx = Tx::Ctx, Err = Tx::Err>,
           F: Fn(Tx::Item) -> B,
-          Tx: Transaction<Ctx> + Sized
+          Tx: Transaction + Sized
 {
     tx.and_then(f)
 }
 
-/// return for Transaction<Ctx, Item = T, Err = E>, equivalent to `ok(x)`
-pub fn ret<T, E>(x: T) -> ::TxOk<T, E> {
+/// return for Transaction<Ctx = Ctx, Item = T, Err = E>, equivalent to `ok(x)`
+pub fn ret<Ctx, T, E>(x: T) -> ::TxOk<Ctx, T, E> {
     ok(x)
 }

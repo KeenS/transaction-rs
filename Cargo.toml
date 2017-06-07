@@ -1,2 +1,5 @@
 [workspace]
 members = ["transaction", "transaction-diesel", "transaction-stm"]
+
+[replace]
+"transaction:0.1.0" = { path = "transaction" }

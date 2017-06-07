@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 pub fn run<'a, Cn, T, E, Tx>(cn: &'a Cn, tx: Tx) -> Result<T, E>
     where Cn: diesel::Connection,
           E: From<diesel::result::Error>,
-          Tx: Transaction<DieselContext<'a, Cn>, Item = T, Err = E>
+          Tx: Transaction<Ctx = DieselContext<'a, Cn>, Item = T, Err = E>
 {
     cn.clone()
         .transaction(|| tx.run(&mut DieselContext::new(cn)))
@@ -21,7 +21,7 @@ pub fn run<'a, Cn, T, E, Tx>(cn: &'a Cn, tx: Tx) -> Result<T, E>
 pub fn test_run<'a, Cn, T, E, Tx>(cn: &'a Cn, tx: Tx) -> T
     where Cn: diesel::Connection,
           E: From<diesel::result::Error>,
-          Tx: Transaction<DieselContext<'a, Cn>, Item = T, Err = E>
+          Tx: Transaction<Ctx = DieselContext<'a, Cn>, Item = T, Err = E>
 {
     cn.clone()
         .test_transaction(|| tx.run(&mut DieselContext::new(cn)))
@@ -48,7 +48,7 @@ impl<'a, Cn> DieselContext<'a, Cn> {
 }
 
 /// Receive the connection from the executing transaction and perform computation.
-pub fn with_conn<'a, Conn: 'a, F, T, E>(f: F) -> WithConn<Conn, F>
+pub fn with_conn<'a, Conn, F, T, E>(f: F) -> WithConn<'a, Conn, F>
     where F: Fn(&'a Conn) -> Result<T, E>
 {
     WithConn {
@@ -59,14 +59,15 @@ pub fn with_conn<'a, Conn: 'a, F, T, E>(f: F) -> WithConn<Conn, F>
 
 /// The result of `with_conn`
 #[derive(Debug)]
-pub struct WithConn<Conn, F> {
+pub struct WithConn<'a, Conn: 'a, F> {
     f: F,
-    _phantom: PhantomData<Conn>,
+    _phantom: PhantomData<&'a Conn>,
 }
 
-impl<'a, Conn: 'a, T, E, F> Transaction<DieselContext<'a, Conn>> for WithConn<Conn, F>
+impl<'a, Conn, T, E, F> Transaction for WithConn<'a, Conn, F>
     where F: Fn(&'a Conn) -> Result<T, E>
 {
+    type Ctx = DieselContext<'a, Conn>;
     type Item = T;
     type Err = E;
     fn run(&self, ctx: &mut DieselContext<'a, Conn>) -> Result<Self::Item, Self::Err> {
