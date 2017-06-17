@@ -5,11 +5,11 @@
 
 use std::marker::PhantomData;
 
-#[cfg(feature="mdo")]
+#[cfg(feature = "mdo")]
 pub mod mdo;
 
 pub mod prelude {
-    pub use super::{Transaction, result, ok, err, lazy, with_ctx};
+    pub use super::{Transaction, result, ok, join_vec, err, lazy, with_ctx};
 }
 
 /// An abstract transaction.
@@ -174,6 +174,14 @@ pub trait Transaction {
             tx4: d,
         }
     }
+
+    /// branch builder
+    fn branch(self) -> BranchBuilder<Self>
+        where Self: Sized
+    {
+        BranchBuilder(self)
+    }
+
     // repeat
     // retry
 }
@@ -222,6 +230,13 @@ pub fn lazy<Ctx, F, T, E>(f: F) -> Lazy<Ctx, F>
         f: f,
         _phantom: PhantomData,
     }
+}
+
+/// join a vec of transaction
+pub fn join_vec<B>(vec: Vec<B>) -> JoinVec<B>
+    where B: Transaction
+{
+    JoinVec { vec: vec }
 }
 
 /// Receive the context from the executing transaction and perform computation.
@@ -343,6 +358,35 @@ pub struct Join4<Tx1, Tx2, Tx3, Tx4> {
     tx4: Tx4,
 }
 
+/// BranchBuilder
+#[derive(Debug)]
+#[must_use]
+pub struct BranchBuilder<Tx>(Tx);
+
+impl<Tx> BranchBuilder<Tx> {
+    pub fn left<B>(self) -> Branch<Tx, B> {
+        Branch::B1(self.0)
+    }
+
+    pub fn right<B>(self) -> Branch<B, Tx> {
+        Branch::B2(self.0)
+    }
+}
+
+/// The result of `branch`
+#[derive(Debug)]
+#[must_use]
+pub enum Branch<Tx1, Tx2> {
+    B1(Tx1),
+    B2(Tx2),
+}
+
+/// The result of `join_vec`
+#[derive(Debug)]
+#[must_use]
+pub struct JoinVec<Tx> {
+    vec: Vec<Tx>,
+}
 
 /// The result of `result`
 #[derive(Debug)]
@@ -594,6 +638,38 @@ impl<Tx1, Tx2, Tx3, Tx4> Transaction for Join4<Tx1, Tx2, Tx3, Tx4>
             (_, _, Err(e), _) |
             (_, _, _, Err(e)) => Err(e),
         }
+    }
+}
+
+impl<Tx1, Tx2> Transaction for Branch<Tx1, Tx2>
+    where Tx1: Transaction,
+          Tx2: Transaction<Ctx = Tx1::Ctx, Item = Tx1::Item, Err = Tx1::Err>
+{
+    type Ctx = Tx1::Ctx;
+    type Item = Tx1::Item;
+    type Err = Tx1::Err;
+    fn run(&self, ctx: &mut Self::Ctx) -> Result<Self::Item, Self::Err> {
+        match *self {
+            Branch::B1(ref tx) => tx.run(ctx),
+            Branch::B2(ref tx) => tx.run(ctx),
+        }
+    }
+}
+
+
+impl<Tx> Transaction for JoinVec<Tx>
+    where Tx: Transaction
+{
+    type Ctx = Tx::Ctx;
+    type Item = Vec<Tx::Item>;
+    type Err = Tx::Err;
+
+    fn run(&self, ctx: &mut Self::Ctx) -> Result<Self::Item, Self::Err> {
+        let vec = &self.vec;
+
+        vec.iter()
+            .map(|tx| tx.run(ctx))
+            .collect::<Result<Vec<_>, _>>()
     }
 }
 
