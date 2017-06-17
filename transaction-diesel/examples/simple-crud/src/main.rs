@@ -39,15 +39,15 @@ fn main() {
                     println!("user not found");
                     // when you branch and return different `Transaction`s it is an error. Some operation is needed.
                     // One option is boxing all the transactions returning from all the branches.
-                    // Another option is using `branch` API. Use `left` in one branch and `right` in the other branch.
-                    ok(()).branch().left()
+                    // Another option is using `branch` API. Use `first` in one branch and `second` in the other branch.
+                    ok(()).branch().first()
                 }
                 Some(()) => db::find_user(user.id)
                 .and_then(move |maybe_updated_user| {
                     match maybe_updated_user {
                         None => {
                             println!("user not found");
-                            ok(()).branch().left()
+                            ok(()).branch().first()
                         },
                         Some(updated_user) => {
                             println!("updated user: {:?}", updated_user);
@@ -58,10 +58,10 @@ fn main() {
                                     },
                                     Some(()) => ()
                                 })
-                                .branch().right()
+                                .branch().second()
                         }
                     }
-                }).branch().right(),
+                }).branch().second(),
 
             })
     });

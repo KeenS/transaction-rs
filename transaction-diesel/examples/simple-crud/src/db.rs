@@ -9,16 +9,20 @@ use transaction_diesel::with_conn;
 use model::*;
 
 type Ctx<'a> = DieselContext<'a, PgConnection>;
+// Until Rust supports `impl Trait`, we need to box `Transaction`s when returning from functions.
 type BoxTx<'a, T> = Box<Transaction<Ctx = Ctx<'a>, Item = T, Err = Error> + 'a>;
 
 pub fn create_user<'a>(name: &'a str) -> BoxTx<'a, User> {
     use schema::users::table;
-
+    // Connections are injected via transaction.
+    // Get it using `with_conn`
     with_conn(move |cn| {
                   diesel::insert(&NewUser { name: name })
                       .into(table)
                       .get_result(cn)
-              }).boxed()
+    })
+        // box it
+        .boxed()
 }
 
 pub fn find_user<'a>(id: i64) -> BoxTx<'a, Option<User>> {
