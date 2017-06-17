@@ -11,5 +11,5 @@ keywords = ["transaction", "diesel"]
 categories = ["rust-patterns"]
 
 [dependencies]
-diesel = "0.12.1"
+diesel = ">=0.12.0, <= 0.13"
 transaction = "0.1.0"
