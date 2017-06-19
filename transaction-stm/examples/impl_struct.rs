@@ -2,7 +2,7 @@ extern crate stm;
 extern crate transaction;
 extern crate transaction_stm;
 
-use transaction::{Transaction, with_ctx};
+use transaction::prelude::*;
 use transaction_stm::run;
 
 struct Data {
@@ -18,16 +18,14 @@ impl Data {
                      let xv = ctx.read(&self.x)?;
                      ctx.write(&self.x, xv + 1)?;
                      Ok(xv)
-                 })
-                .boxed()
+                 }).boxed()
     }
     fn inc_y(&self) -> BoxTx<i32> {
         with_ctx(move |ctx: &mut stm::Transaction| {
                      let yv = ctx.read(&self.y)?;
                      ctx.write(&self.y, yv + 1)?;
                      Ok(yv)
-                 })
-                .boxed()
+                 }).boxed()
     }
 
     fn inc_xy(&self) -> BoxTx<i32> {
@@ -38,8 +36,7 @@ impl Data {
                      let xv = ctx.read(&self.x)?;
                      let yv = ctx.read(&self.y)?;
                      Ok(xv + yv)
-                 })
-                .boxed()
+                 }).boxed()
     }
 }
 
