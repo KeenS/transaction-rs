@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 pub mod mdo;
 
 pub mod prelude {
-    pub use super::{Transaction, result, ok, join_vec, err, lazy, with_ctx};
+    pub use super::{Transaction, result, ok, join_vec, err, lazy, with_ctx, repeat};
 }
 
 /// An abstract transaction.
@@ -196,7 +196,6 @@ pub trait Transaction {
         Branch4Builder(self)
     }
 
-    // repeat
     // retry
 }
 
@@ -252,6 +251,18 @@ pub fn join_vec<B>(vec: Vec<B>) -> JoinVec<B>
 {
     JoinVec { vec: vec }
 }
+
+pub fn repeat<F, Tx>(n: usize, f: F) -> Repeat<F, Tx>
+    where Tx: Transaction,
+          F: Fn(usize) -> Tx
+{
+    Repeat {
+        n: n,
+        f: f,
+        _phantom: PhantomData,
+    }
+}
+
 
 /// Receive the context from the executing transaction and perform computation.
 pub fn with_ctx<Ctx, F, T, E>(f: F) -> WithCtx<Ctx, F>
@@ -458,11 +469,13 @@ pub enum Branch4<Tx1, Tx2, Tx3, Tx4> {
     B4(Tx4),
 }
 
-/// The result of `join_vec`
+/// The result of `repeat`
 #[derive(Debug)]
 #[must_use]
-pub struct JoinVec<Tx> {
-    vec: Vec<Tx>,
+pub struct Repeat<F, Tx> {
+    n: usize,
+    f: F,
+    _phantom: PhantomData<Tx>,
 }
 
 /// The result of `result`
@@ -495,6 +508,13 @@ pub struct TxErr<Ctx, T, E> {
 pub struct Lazy<Ctx, F> {
     f: F,
     _phantom: PhantomData<Ctx>,
+}
+
+/// The result of `join_vec`
+#[derive(Debug)]
+#[must_use]
+pub struct JoinVec<Tx> {
+    vec: Vec<Tx>,
 }
 
 /// The result of `with_ctx`
@@ -770,22 +790,22 @@ impl<Tx1, Tx2, Tx3, Tx4> Transaction for Branch4<Tx1, Tx2, Tx3, Tx4>
 }
 
 
-impl<Tx> Transaction for JoinVec<Tx>
-    where Tx: Transaction
+impl<F, Tx> Transaction for Repeat<F, Tx>
+    where F: Fn(usize) -> Tx,
+          Tx: Transaction
 {
     type Ctx = Tx::Ctx;
     type Item = Vec<Tx::Item>;
     type Err = Tx::Err;
-
     fn run(&self, ctx: &mut Self::Ctx) -> Result<Self::Item, Self::Err> {
-        let vec = &self.vec;
-
-        vec.iter()
-            .map(|tx| tx.run(ctx))
-            .collect::<Result<Vec<_>, _>>()
+        let Repeat { ref n, ref f, .. } = *self;
+        let mut ret = Vec::new();
+        for i in 0..*n {
+            ret.push(f(i).run(ctx)?)
+        }
+        Ok(ret)
     }
 }
-
 
 impl<Ctx, T, E> Transaction for TxResult<Ctx, T, E>
     where T: Clone,
@@ -830,6 +850,22 @@ impl<Ctx, T, E, F> Transaction for Lazy<Ctx, F>
     type Err = E;
     fn run(&self, _ctx: &mut Self::Ctx) -> Result<Self::Item, Self::Err> {
         (self.f)()
+    }
+}
+
+impl<Tx> Transaction for JoinVec<Tx>
+    where Tx: Transaction
+{
+    type Ctx = Tx::Ctx;
+    type Item = Vec<Tx::Item>;
+    type Err = Tx::Err;
+
+    fn run(&self, ctx: &mut Self::Ctx) -> Result<Self::Item, Self::Err> {
+        let vec = &self.vec;
+
+        vec.iter()
+            .map(|tx| tx.run(ctx))
+            .collect::<Result<Vec<_>, _>>()
     }
 }
 
