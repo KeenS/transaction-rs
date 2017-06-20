@@ -49,7 +49,7 @@ fn main() {
         y: stm::TVar::new(0),
     };
 
-    let ret = run(data.inc_xy().and_then(|_| data.add()));
+    let ret = run(&data.inc_xy().and_then(|_| data.add()));
 
     assert_eq!(ret, 2);
 }

@@ -21,7 +21,7 @@ fn main() {
                               })
                   })
         .and_then(|_| with_tx(|ctx| Ok(ctx.read(&x)? + ctx.read(&y)?)));
-    let ret = run(inc_xy);
+    let ret = run(&inc_xy);
     assert_eq!(ret, 2);
 
 }
