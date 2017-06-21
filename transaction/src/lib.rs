@@ -1,6 +1,78 @@
-//! # Zero-cost transactions in Rust
+//! # Zero-cost transaction abstraction in Rust
 //! This crate abstracts over transactions like STM, SQL transactions and so on.
-//! It is also composable via combinators and do DI of transactions.
+//! It is composable via combinators and does DI of transactions.
+//!
+//! The basic idea is representing contracts of "this computation must be run" as
+//! types. The trait `Transaction` represents o sequence of computation that must
+//! be run under a transaction. And transactions are composable (sequencable)
+//! using `then`, `and_then`, `or_else`, hence you can use it like values wrapped
+//! in `Result`.Since it represents computation to be run in data, some types
+//! respond to control operators are provided: `abort` for `?` `repeat` for `for`
+//! and `branch` for (join point of) `if` and so on.
+//!
+//! As all the combinators have its own result type, no dispatches are done at
+//! execution time thus it is zero-cost.
+//!
+//! Another feature is it does DI of transaction. For database transaction, it
+//! means it injects DB connection from the context.
+//!
+//! # Examples
+//!
+//! ```
+//!
+//! extern crate transaction;
+//!
+//! use self::transaction::prelude::*;
+//!
+//! # struct FooConnection;
+//! # struct FooError;
+//! # #[derive(Clone)]struct User;
+//!
+//! // Since current rust doesn't support `impl Trait`, you need to make a trait box
+//! // to return a trait value from a function.
+//! type BoxTx<'a, T> = Box<Transaction<Ctx = FooConnection, Item = T, Err = FooError> + 'a>;
+//!
+//! fn find_user<'a>(id: i64) -> BoxTx<'a, Option<User>> {
+//!     // connection is inejected from the context
+//!     with_ctx(move |cn: &mut FooConnection| {
+//!         // ..
+//!         # let _ = (id, cn);
+//!         # unimplemented!()
+//!     }).boxed()
+//!
+//! }
+//!
+//! fn update_user<'a>(id: i64, name: &'a str) -> BoxTx<'a, Option<()>> {
+//!     with_ctx(move |cn: &mut FooConnection| {
+//!         // ..
+//!         # let _ = (id, cn, name);
+//!         # unimplemented!()
+//!     }).boxed()
+//! }
+//!
+//! fn update_find_user<'a>(id: i64, name: &'a str) -> BoxTx<'a, Option<User>> {
+//!     update_user(id, name)
+//!         // transaction can be composed using `and_then`
+//!         .and_then(move |ret| match ret {
+//!             None =>
+//!                 // to return a leaf transaction, use `ok`, `err` or `result`
+//!                 ok(None)
+//!                 // to return from a branch (or, to match types at join point),
+//!                 //  use `branch` API
+//!                 .branch()
+//!                 // use `first` in the first arm of the brnach
+//!                 .first(),
+//!             Some(()) => find_user(id)
+//!                 .branch()
+//!                 // use `second` in the second arm of the brnach
+//!                 .second(),
+//!         })
+//!         // finally, box it to return `BoxTx`.
+//!         .boxed()
+//! }
+//! # fn main() {}
+//! ```
+
 
 
 use std::marker::PhantomData;
@@ -14,8 +86,13 @@ pub mod prelude {
 
 /// An abstract transaction.
 /// Transactions sharing the same `Ctx` can be composed with combinators.
+/// When the transaction return an error, it means the transaction is failed.
+/// Some runners may abort the transaction and the other may retry the computation.
+/// Thus all the computation should be idempotent (of cause, except operations using context).
+/// Note that this transaction is not executed until it is `run`.
 #[must_use]
 pub trait Transaction {
+    /// The contxt type (i.e. transaction type) of the transaction
     type Ctx;
     /// The return type of the transaction
     type Item;
@@ -47,7 +124,7 @@ pub trait Transaction {
         }
     }
 
-    /// transform the previous successful value
+    /// Transform the previous successful value
     fn map<F, B>(self, f: F) -> Map<Self, F>
     where
         F: Fn(Self::Item) -> B,
@@ -72,7 +149,7 @@ pub trait Transaction {
         }
     }
 
-    /// transform the previous error value
+    /// Transform the previous error value
     fn map_err<F, B>(self, f: F) -> MapErr<Self, F>
     where
         F: Fn(Self::Err) -> B,
@@ -97,7 +174,7 @@ pub trait Transaction {
         }
     }
 
-    /// Abort the transaction
+    /// Take the previous successfull value of computation and abort the transaction.
     fn abort<T, F>(self, f: F) -> Abort<Self, T, F>
     where
         F: Fn(Self::Item) -> Self::Err,
@@ -123,7 +200,7 @@ pub trait Transaction {
         }
     }
 
-    /// Recover the transaction
+    /// Recover from an error
     fn recover<T, F>(self, f: F) -> Recover<Self, T, F>
     where
         F: Fn(Self::Item) -> Self::Err,
