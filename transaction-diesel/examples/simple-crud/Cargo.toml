@@ -5,8 +5,8 @@ version = "0.1.0"
 
 [dependencies]
 dotenv = "0.10.0"
-transaction = "0.1.0"
-transaction-diesel = "0.1.0"
+transaction = "0.2.0"
+transaction-diesel = {path ="../../"}
 
 [dependencies.diesel]
 features = ["postgres"]
