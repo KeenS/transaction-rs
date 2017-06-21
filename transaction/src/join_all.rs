@@ -1,12 +1,13 @@
 use {IntoTransaction, Transaction};
 
 /// join a vec of transaction
-pub fn join_vec<Ctx, B>(vec: Vec<B>) -> JoinVec<B::Tx>
+pub fn join_all<Ctx, I, B>(i: I) -> JoinAll<B::Tx>
 where
+    I: IntoIterator<Item = B>,
     B: IntoTransaction<Ctx>,
 {
-    JoinVec {
-        vec: vec.into_iter()
+    JoinAll {
+        vec: i.into_iter()
             .map(IntoTransaction::into_transaction)
             .collect(),
     }
@@ -15,11 +16,11 @@ where
 /// The result of `join_vec`
 #[derive(Debug)]
 #[must_use]
-pub struct JoinVec<Tx> {
+pub struct JoinAll<Tx> {
     vec: Vec<Tx>,
 }
 
-impl<Tx> Transaction for JoinVec<Tx>
+impl<Tx> Transaction for JoinAll<Tx>
 where
     Tx: Transaction,
 {
