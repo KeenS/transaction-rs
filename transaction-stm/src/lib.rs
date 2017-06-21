@@ -48,13 +48,15 @@ use stm::Transaction as Stm;
 
 /// Run the `stm` transaction
 pub fn run<T, Tx>(tx: &Tx) -> T
-    where Tx: Transaction<Ctx = Stm, Item = T, Err = stm::StmError>
+where
+    Tx: Transaction<Ctx = Stm, Item = T, Err = stm::StmError>,
 {
     Stm::with(|stm| tx.run(stm))
 }
 
 pub fn with_tx<F, T, E>(f: F) -> WithTx<F>
-    where F: Fn(&mut Stm) -> Result<T, E>
+where
+    F: Fn(&mut Stm) -> Result<T, E>,
 {
     WithTx { f: f }
 }
@@ -64,7 +66,8 @@ pub struct WithTx<F> {
 }
 
 impl<F, T, E> Transaction for WithTx<F>
-    where F: Fn(&mut Stm) -> Result<T, E>
+where
+    F: Fn(&mut Stm) -> Result<T, E>,
 {
     type Ctx = Stm;
     type Item = T;

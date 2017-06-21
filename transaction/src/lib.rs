@@ -27,16 +27,18 @@ pub trait Transaction {
 
     /// Box the transaction
     fn boxed<'a>(self) -> Box<Transaction<Ctx = Self::Ctx, Item = Self::Item, Err = Self::Err> + 'a>
-        where Self: Sized + 'a
+    where
+        Self: Sized + 'a,
     {
         Box::new(self)
     }
 
     /// Take the previous result of computation and do another computation
     fn then<F, B, Tx2>(self, f: F) -> Then<Self, F, Tx2>
-        where Tx2: Transaction<Ctx = Self::Ctx, Item = B, Err = Self::Err>,
-              F: Fn(Result<Self::Item, Self::Err>) -> Tx2,
-              Self: Sized
+    where
+        Tx2: Transaction<Ctx = Self::Ctx, Item = B, Err = Self::Err>,
+        F: Fn(Result<Self::Item, Self::Err>) -> Tx2,
+        Self: Sized,
     {
         Then {
             tx: self,
@@ -47,8 +49,9 @@ pub trait Transaction {
 
     /// transform the previous successful value
     fn map<F, B>(self, f: F) -> Map<Self, F>
-        where F: Fn(Self::Item) -> B,
-              Self: Sized
+    where
+        F: Fn(Self::Item) -> B,
+        Self: Sized,
     {
         Map { tx: self, f: f }
     }
@@ -57,9 +60,10 @@ pub trait Transaction {
 
     /// Take the previous successful value of computation and do another computation
     fn and_then<F, B>(self, f: F) -> AndThen<Self, F, B>
-        where B: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
-              F: Fn(Self::Item) -> B,
-              Self: Sized
+    where
+        B: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
+        F: Fn(Self::Item) -> B,
+        Self: Sized,
     {
         AndThen {
             tx: self,
@@ -70,8 +74,9 @@ pub trait Transaction {
 
     /// transform the previous error value
     fn map_err<F, B>(self, f: F) -> MapErr<Self, F>
-        where F: Fn(Self::Err) -> B,
-              Self: Sized
+    where
+        F: Fn(Self::Err) -> B,
+        Self: Sized,
     {
         MapErr { tx: self, f: f }
     }
@@ -80,9 +85,10 @@ pub trait Transaction {
     /// Take the previous error value of computation and do another computation.
     /// This may be used falling back
     fn or_else<F, B>(self, f: F) -> OrElse<Self, F, B>
-        where B: Transaction<Ctx = Self::Ctx, Item = Self::Item>,
-              F: Fn(Self::Err) -> B,
-              Self: Sized
+    where
+        B: Transaction<Ctx = Self::Ctx, Item = Self::Item>,
+        F: Fn(Self::Err) -> B,
+        Self: Sized,
     {
         OrElse {
             tx: self,
@@ -93,8 +99,9 @@ pub trait Transaction {
 
     /// Abort the transaction
     fn abort<T, F>(self, f: F) -> Abort<Self, T, F>
-        where F: Fn(Self::Item) -> Self::Err,
-              Self: Sized
+    where
+        F: Fn(Self::Item) -> Self::Err,
+        Self: Sized,
     {
         Abort {
             tx: self,
@@ -105,8 +112,9 @@ pub trait Transaction {
 
     /// Try to abort the transaction
     fn try_abort<F, B>(self, f: F) -> TryAbort<Self, F, B>
-        where F: Fn(Self::Item) -> Result<B, Self::Err>,
-              Self: Sized
+    where
+        F: Fn(Self::Item) -> Result<B, Self::Err>,
+        Self: Sized,
     {
         TryAbort {
             tx: self,
@@ -117,8 +125,9 @@ pub trait Transaction {
 
     /// Recover the transaction
     fn recover<T, F>(self, f: F) -> Recover<Self, T, F>
-        where F: Fn(Self::Item) -> Self::Err,
-              Self: Sized
+    where
+        F: Fn(Self::Item) -> Self::Err,
+        Self: Sized,
     {
         Recover {
             tx: self,
@@ -129,8 +138,9 @@ pub trait Transaction {
 
     /// Try to recover the transaction
     fn try_recover<F, B>(self, f: F) -> TryRecover<Self, F, B>
-        where F: Fn(Self::Item) -> Result<B, Self::Err>,
-              Self: Sized
+    where
+        F: Fn(Self::Item) -> Result<B, Self::Err>,
+        Self: Sized,
     {
         TryRecover {
             tx: self,
@@ -141,17 +151,19 @@ pub trait Transaction {
 
     /// join 2 indepndant transactions
     fn join<B>(self, b: B) -> Join<Self, B>
-        where B: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
-              Self: Sized
+    where
+        B: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
+        Self: Sized,
     {
         Join { tx1: self, tx2: b }
     }
 
     /// join 3 indepndant transactions
     fn join3<B, C>(self, b: B, c: C) -> Join3<Self, B, C>
-        where B: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
-              C: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
-              Self: Sized
+    where
+        B: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
+        C: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
+        Self: Sized,
     {
         Join3 {
             tx1: self,
@@ -162,10 +174,11 @@ pub trait Transaction {
 
     /// join 4 indepndant transactions
     fn join4<B, C, D>(self, b: B, c: C, d: D) -> Join4<Self, B, C, D>
-        where B: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
-              C: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
-              D: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
-              Self: Sized
+    where
+        B: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
+        C: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
+        D: Transaction<Ctx = Self::Ctx, Err = Self::Err>,
+        Self: Sized,
     {
         Join4 {
             tx1: self,
@@ -177,21 +190,24 @@ pub trait Transaction {
 
     /// branch builder
     fn branch(self) -> BranchBuilder<Self>
-        where Self: Sized
+    where
+        Self: Sized,
     {
         BranchBuilder(self)
     }
 
     /// 3 branch builder
     fn branch3(self) -> Branch3Builder<Self>
-        where Self: Sized
+    where
+        Self: Sized,
     {
         Branch3Builder(self)
     }
 
     /// 4 branch builder
     fn branch4(self) -> Branch4Builder<Self>
-        where Self: Sized
+    where
+        Self: Sized,
     {
         Branch4Builder(self)
     }
@@ -237,7 +253,8 @@ pub fn err<Ctx, T, E>(e: E) -> TxErr<Ctx, T, E> {
 /// lazy evaluated transaction value.
 /// Note that inner function can be called many times.
 pub fn lazy<Ctx, F, T, E>(f: F) -> Lazy<Ctx, F>
-    where F: Fn() -> Result<T, E>
+where
+    F: Fn() -> Result<T, E>,
 {
     Lazy {
         f: f,
@@ -247,14 +264,16 @@ pub fn lazy<Ctx, F, T, E>(f: F) -> Lazy<Ctx, F>
 
 /// join a vec of transaction
 pub fn join_vec<B>(vec: Vec<B>) -> JoinVec<B>
-    where B: Transaction
+where
+    B: Transaction,
 {
     JoinVec { vec: vec }
 }
 
 pub fn repeat<F, Tx>(n: usize, f: F) -> Repeat<F, Tx>
-    where Tx: Transaction,
-          F: Fn(usize) -> Tx
+where
+    Tx: Transaction,
+    F: Fn(usize) -> Tx,
 {
     Repeat {
         n: n,
@@ -266,7 +285,8 @@ pub fn repeat<F, Tx>(n: usize, f: F) -> Repeat<F, Tx>
 
 /// Receive the context from the executing transaction and perform computation.
 pub fn with_ctx<Ctx, F, T, E>(f: F) -> WithCtx<Ctx, F>
-    where F: Fn(&mut Ctx) -> Result<T, E>
+where
+    F: Fn(&mut Ctx) -> Result<T, E>,
 {
     WithCtx {
         f: f,
@@ -526,8 +546,9 @@ pub struct WithCtx<Ctx, F> {
 }
 
 impl<Tx, U, F> Transaction for Map<Tx, F>
-    where Tx: Transaction,
-          F: Fn(Tx::Item) -> U
+where
+    Tx: Transaction,
+    F: Fn(Tx::Item) -> U,
 {
     type Ctx = Tx::Ctx;
     type Item = U;
@@ -540,9 +561,10 @@ impl<Tx, U, F> Transaction for Map<Tx, F>
 }
 
 impl<Tx, Tx2, F> Transaction for Then<Tx, F, Tx2>
-    where Tx2: Transaction<Ctx = Tx::Ctx, Err = Tx::Err>,
-          Tx: Transaction,
-          F: Fn(Result<Tx::Item, Tx::Err>) -> Tx2
+where
+    Tx2: Transaction<Ctx = Tx::Ctx, Err = Tx::Err>,
+    Tx: Transaction,
+    F: Fn(Result<Tx::Item, Tx::Err>) -> Tx2,
 {
     type Ctx = Tx::Ctx;
     type Item = Tx2::Item;
@@ -556,9 +578,10 @@ impl<Tx, Tx2, F> Transaction for Then<Tx, F, Tx2>
 
 
 impl<Tx, Tx2, F> Transaction for AndThen<Tx, F, Tx2>
-    where Tx2: Transaction<Ctx = Tx::Ctx, Err = Tx::Err>,
-          Tx: Transaction,
-          F: Fn(Tx::Item) -> Tx2
+where
+    Tx2: Transaction<Ctx = Tx::Ctx, Err = Tx::Err>,
+    Tx: Transaction,
+    F: Fn(Tx::Item) -> Tx2,
 {
     type Ctx = Tx::Ctx;
     type Item = Tx2::Item;
@@ -572,8 +595,9 @@ impl<Tx, Tx2, F> Transaction for AndThen<Tx, F, Tx2>
 
 
 impl<E, Tx, F> Transaction for MapErr<Tx, F>
-    where Tx: Transaction,
-          F: Fn(Tx::Err) -> E
+where
+    Tx: Transaction,
+    F: Fn(Tx::Err) -> E,
 {
     type Ctx = Tx::Ctx;
     type Item = Tx::Item;
@@ -587,9 +611,10 @@ impl<E, Tx, F> Transaction for MapErr<Tx, F>
 
 
 impl<Tx, Tx2, F> Transaction for OrElse<Tx, F, Tx2>
-    where Tx2: Transaction<Ctx = Tx::Ctx, Item = Tx::Item>,
-          Tx: Transaction,
-          F: Fn(Tx::Err) -> Tx2
+where
+    Tx2: Transaction<Ctx = Tx::Ctx, Item = Tx::Item>,
+    Tx: Transaction,
+    F: Fn(Tx::Err) -> Tx2,
 {
     type Ctx = Tx2::Ctx;
     type Item = Tx2::Item;
@@ -603,8 +628,9 @@ impl<Tx, Tx2, F> Transaction for OrElse<Tx, F, Tx2>
 
 
 impl<Tx, F, T> Transaction for Abort<Tx, T, F>
-    where Tx: Transaction,
-          F: Fn(Tx::Item) -> Tx::Err
+where
+    Tx: Transaction,
+    F: Fn(Tx::Item) -> Tx::Err,
 {
     type Ctx = Tx::Ctx;
     type Item = T;
@@ -620,8 +646,9 @@ impl<Tx, F, T> Transaction for Abort<Tx, T, F>
 }
 
 impl<Tx, F, B> Transaction for TryAbort<Tx, F, B>
-    where Tx: Transaction,
-          F: Fn(Tx::Item) -> Result<B, Tx::Err>
+where
+    Tx: Transaction,
+    F: Fn(Tx::Item) -> Result<B, Tx::Err>,
 {
     type Ctx = Tx::Ctx;
     type Item = B;
@@ -639,8 +666,9 @@ impl<Tx, F, B> Transaction for TryAbort<Tx, F, B>
 
 
 impl<Tx, F, T> Transaction for Recover<Tx, T, F>
-    where Tx: Transaction,
-          F: Fn(Tx::Err) -> Tx::Item
+where
+    Tx: Transaction,
+    F: Fn(Tx::Err) -> Tx::Item,
 {
     type Ctx = Tx::Ctx;
     type Item = Tx::Item;
@@ -656,8 +684,9 @@ impl<Tx, F, T> Transaction for Recover<Tx, T, F>
 }
 
 impl<Tx, F, B> Transaction for TryRecover<Tx, F, B>
-    where Tx: Transaction,
-          F: Fn(Tx::Err) -> Result<Tx::Item, B>
+where
+    Tx: Transaction,
+    F: Fn(Tx::Err) -> Result<Tx::Item, B>,
 {
     type Ctx = Tx::Ctx;
     type Item = Tx::Item;
@@ -673,8 +702,9 @@ impl<Tx, F, B> Transaction for TryRecover<Tx, F, B>
 }
 
 impl<Tx1, Tx2> Transaction for Join<Tx1, Tx2>
-    where Tx1: Transaction,
-          Tx2: Transaction<Ctx = Tx1::Ctx, Err = Tx1::Err>
+where
+    Tx1: Transaction,
+    Tx2: Transaction<Ctx = Tx1::Ctx, Err = Tx1::Err>,
 {
     type Ctx = Tx1::Ctx;
     type Item = (Tx1::Item, Tx2::Item);
@@ -712,10 +742,20 @@ impl<Tx1, Tx2, Tx3> Transaction for Join3<Tx1, Tx2, Tx3>
 }
 
 impl<Tx1, Tx2, Tx3, Tx4> Transaction for Join4<Tx1, Tx2, Tx3, Tx4>
-    where Tx1: Transaction,
-          Tx2: Transaction<Ctx = Tx1::Ctx, Err = Tx1::Err>,
-          Tx3: Transaction<Ctx = Tx1::Ctx, Err = Tx1::Err>,
-          Tx4: Transaction<Ctx = Tx1::Ctx, Err = Tx1::Err>
+where
+    Tx1: Transaction,
+    Tx2: Transaction<
+        Ctx = Tx1::Ctx,
+        Err = Tx1::Err,
+    >,
+    Tx3: Transaction<
+        Ctx = Tx1::Ctx,
+        Err = Tx1::Err,
+    >,
+    Tx4: Transaction<
+        Ctx = Tx1::Ctx,
+        Err = Tx1::Err,
+    >,
 {
     type Ctx = Tx1::Ctx;
     type Item = (Tx1::Item, Tx2::Item, Tx3::Item, Tx4::Item);
@@ -739,8 +779,13 @@ impl<Tx1, Tx2, Tx3, Tx4> Transaction for Join4<Tx1, Tx2, Tx3, Tx4>
 }
 
 impl<Tx1, Tx2> Transaction for Branch<Tx1, Tx2>
-    where Tx1: Transaction,
-          Tx2: Transaction<Ctx = Tx1::Ctx, Item = Tx1::Item, Err = Tx1::Err>
+where
+    Tx1: Transaction,
+    Tx2: Transaction<
+        Ctx = Tx1::Ctx,
+        Item = Tx1::Item,
+        Err = Tx1::Err,
+    >,
 {
     type Ctx = Tx1::Ctx;
     type Item = Tx1::Item;
@@ -754,9 +799,18 @@ impl<Tx1, Tx2> Transaction for Branch<Tx1, Tx2>
 }
 
 impl<Tx1, Tx2, Tx3> Transaction for Branch3<Tx1, Tx2, Tx3>
-    where Tx1: Transaction,
-          Tx2: Transaction<Ctx = Tx1::Ctx, Item = Tx1::Item, Err = Tx1::Err>,
-          Tx3: Transaction<Ctx = Tx1::Ctx, Item = Tx1::Item, Err = Tx1::Err>
+where
+    Tx1: Transaction,
+    Tx2: Transaction<
+        Ctx = Tx1::Ctx,
+        Item = Tx1::Item,
+        Err = Tx1::Err,
+    >,
+    Tx3: Transaction<
+        Ctx = Tx1::Ctx,
+        Item = Tx1::Item,
+        Err = Tx1::Err,
+    >,
 {
     type Ctx = Tx1::Ctx;
     type Item = Tx1::Item;
@@ -771,10 +825,23 @@ impl<Tx1, Tx2, Tx3> Transaction for Branch3<Tx1, Tx2, Tx3>
 }
 
 impl<Tx1, Tx2, Tx3, Tx4> Transaction for Branch4<Tx1, Tx2, Tx3, Tx4>
-    where Tx1: Transaction,
-          Tx2: Transaction<Ctx = Tx1::Ctx, Item = Tx1::Item, Err = Tx1::Err>,
-          Tx3: Transaction<Ctx = Tx1::Ctx, Item = Tx1::Item, Err = Tx1::Err>,
-          Tx4: Transaction<Ctx = Tx1::Ctx, Item = Tx1::Item, Err = Tx1::Err>
+where
+    Tx1: Transaction,
+    Tx2: Transaction<
+        Ctx = Tx1::Ctx,
+        Item = Tx1::Item,
+        Err = Tx1::Err,
+    >,
+    Tx3: Transaction<
+        Ctx = Tx1::Ctx,
+        Item = Tx1::Item,
+        Err = Tx1::Err,
+    >,
+    Tx4: Transaction<
+        Ctx = Tx1::Ctx,
+        Item = Tx1::Item,
+        Err = Tx1::Err,
+    >,
 {
     type Ctx = Tx1::Ctx;
     type Item = Tx1::Item;
@@ -791,8 +858,9 @@ impl<Tx1, Tx2, Tx3, Tx4> Transaction for Branch4<Tx1, Tx2, Tx3, Tx4>
 
 
 impl<F, Tx> Transaction for Repeat<F, Tx>
-    where F: Fn(usize) -> Tx,
-          Tx: Transaction
+where
+    F: Fn(usize) -> Tx,
+    Tx: Transaction,
 {
     type Ctx = Tx::Ctx;
     type Item = Vec<Tx::Item>;
@@ -808,8 +876,9 @@ impl<F, Tx> Transaction for Repeat<F, Tx>
 }
 
 impl<Ctx, T, E> Transaction for TxResult<Ctx, T, E>
-    where T: Clone,
-          E: Clone
+where
+    T: Clone,
+    E: Clone,
 {
     type Ctx = Ctx;
     type Item = T;
@@ -820,7 +889,8 @@ impl<Ctx, T, E> Transaction for TxResult<Ctx, T, E>
 }
 
 impl<Ctx, T, E> Transaction for TxOk<Ctx, T, E>
-    where T: Clone
+where
+    T: Clone,
 {
     type Ctx = Ctx;
     type Item = T;
@@ -831,7 +901,8 @@ impl<Ctx, T, E> Transaction for TxOk<Ctx, T, E>
 }
 
 impl<Ctx, T, E> Transaction for TxErr<Ctx, T, E>
-    where E: Clone
+where
+    E: Clone,
 {
     type Ctx = Ctx;
     type Item = T;
@@ -843,7 +914,8 @@ impl<Ctx, T, E> Transaction for TxErr<Ctx, T, E>
 
 
 impl<Ctx, T, E, F> Transaction for Lazy<Ctx, F>
-    where F: Fn() -> Result<T, E>
+where
+    F: Fn() -> Result<T, E>,
 {
     type Ctx = Ctx;
     type Item = T;
@@ -854,7 +926,8 @@ impl<Ctx, T, E, F> Transaction for Lazy<Ctx, F>
 }
 
 impl<Tx> Transaction for JoinVec<Tx>
-    where Tx: Transaction
+where
+    Tx: Transaction,
 {
     type Ctx = Tx::Ctx;
     type Item = Vec<Tx::Item>;
@@ -870,7 +943,8 @@ impl<Tx> Transaction for JoinVec<Tx>
 }
 
 impl<Ctx, T, E, F> Transaction for WithCtx<Ctx, F>
-    where F: Fn(&mut Ctx) -> Result<T, E>
+where
+    F: Fn(&mut Ctx) -> Result<T, E>,
 {
     type Ctx = Ctx;
     type Item = T;
@@ -891,7 +965,8 @@ impl<Ctx, T, E> Transaction for Fn(&mut Ctx) -> Result<T, E> {
 
 
 impl<T> Transaction for Box<T>
-    where T: ?Sized + Transaction
+where
+    T: ?Sized + Transaction,
 {
     type Ctx = T::Ctx;
     type Item = T::Item;
@@ -902,7 +977,8 @@ impl<T> Transaction for Box<T>
 }
 
 impl<'a, T> Transaction for &'a T
-    where T: ?Sized + Transaction
+where
+    T: ?Sized + Transaction,
 {
     type Ctx = T::Ctx;
     type Item = T::Item;

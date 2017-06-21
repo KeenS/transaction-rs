@@ -13,18 +13,18 @@ type BoxTx<'a, T> = Box<Transaction<Ctx = stm::Transaction, Item = T, Err = stm:
 
 fn inc<'a>(x: &'a stm::TVar<usize>) -> BoxTx<'a, usize> {
     with_tx(move |ctx| {
-                let xv = ctx.read(&x)?;
-                ctx.write(&x, xv + 1)?;
-                Ok(xv)
-            }).boxed()
+        let xv = ctx.read(&x)?;
+        ctx.write(&x, xv + 1)?;
+        Ok(xv)
+    }).boxed()
 }
 
 fn halve<'a>(x: &'a stm::TVar<usize>) -> BoxTx<'a, usize> {
     with_tx(move |ctx| {
-                let xv = ctx.read(&x)?;
-                ctx.write(&x, xv / 2)?;
-                Ok(xv)
-            }).boxed()
+        let xv = ctx.read(&x)?;
+        ctx.write(&x, xv / 2)?;
+        Ok(xv)
+    }).boxed()
 }
 
 
@@ -57,25 +57,25 @@ fn bench_nonboxing(b: &mut Bencher) {
     let x = stm::TVar::new(0);
     let tx = repeat(1_000, |i| if i % 2 == 0 {
         with_tx(|ctx| {
-                    let xv = ctx.read(&x)?;
-                    ctx.write(&x, xv + 1)?;
-                    Ok(xv)
-                }).and_then(|_| {
-                          with_tx(|ctx| {
-                                      let xv = ctx.read(&x)?;
-                                      ctx.write(&x, xv / 2)?;
-                                      Ok(xv)
-                                  })
-                      })
+            let xv = ctx.read(&x)?;
+            ctx.write(&x, xv + 1)?;
+            Ok(xv)
+        }).and_then(|_| {
+            with_tx(|ctx| {
+                let xv = ctx.read(&x)?;
+                ctx.write(&x, xv / 2)?;
+                Ok(xv)
+            })
+        })
             .map(|_| ())
             .branch()
             .first()
     } else {
         with_tx(|ctx| {
-                    let xv = ctx.read(&x)?;
-                    ctx.write(&x, xv + 1)?;
-                    Ok(xv)
-                }).map(|_| ())
+            let xv = ctx.read(&x)?;
+            ctx.write(&x, xv + 1)?;
+            Ok(xv)
+        }).map(|_| ())
             .branch()
             .second()
 

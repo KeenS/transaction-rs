@@ -15,17 +15,17 @@ type BoxTx<'a, T> = Box<Transaction<Ctx = stm::Transaction, Item = T, Err = stm:
 impl Data {
     fn inc_x(&self) -> BoxTx<i32> {
         with_tx(move |ctx| {
-                    let xv = ctx.read(&self.x)?;
-                    ctx.write(&self.x, xv + 1)?;
-                    Ok(xv)
-                }).boxed()
+            let xv = ctx.read(&self.x)?;
+            ctx.write(&self.x, xv + 1)?;
+            Ok(xv)
+        }).boxed()
     }
     fn inc_y(&self) -> BoxTx<i32> {
         with_tx(move |ctx| {
-                    let yv = ctx.read(&self.y)?;
-                    ctx.write(&self.y, yv + 1)?;
-                    Ok(yv)
-                }).boxed()
+            let yv = ctx.read(&self.y)?;
+            ctx.write(&self.y, yv + 1)?;
+            Ok(yv)
+        }).boxed()
     }
 
     fn inc_xy(&self) -> BoxTx<i32> {
@@ -33,10 +33,10 @@ impl Data {
     }
     fn add(&self) -> BoxTx<i32> {
         with_tx(move |ctx| {
-                    let xv = ctx.read(&self.x)?;
-                    let yv = ctx.read(&self.y)?;
-                    Ok(xv + yv)
-                }).boxed()
+            let xv = ctx.read(&self.x)?;
+            let yv = ctx.read(&self.y)?;
+            Ok(xv + yv)
+        }).boxed()
     }
 }
 

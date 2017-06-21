@@ -33,21 +33,21 @@ pub fn find_user<'a>(id: i64) -> BoxTx<'a, Option<User>> {
 pub fn update_user<'a>(id: i64, name: &'a str) -> BoxTx<'a, Option<()>> {
     use schema::users::dsl;
     with_conn(move |cn| {
-                  diesel::update(dsl::users.find(id))
-                      .set(dsl::name.eq(name))
-                      .execute(cn)
-                      .map(|_| ())
-                      .optional()
-              }).boxed()
+        diesel::update(dsl::users.find(id))
+            .set(dsl::name.eq(name))
+            .execute(cn)
+            .map(|_| ())
+            .optional()
+    }).boxed()
 }
 
 
 pub fn delete_user<'a>(id: i64) -> BoxTx<'a, Option<()>> {
     use schema::users::dsl::users;
     with_conn(move |cn| {
-                  diesel::delete(users.find(id))
-                      .execute(cn)
-                      .map(|_| ())
-                      .optional()
-              }).boxed()
+        diesel::delete(users.find(id))
+            .execute(cn)
+            .map(|_| ())
+            .optional()
+    }).boxed()
 }
