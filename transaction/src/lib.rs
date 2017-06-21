@@ -91,6 +91,7 @@ pub mod prelude {
     pub use ok::ok;
     pub use repeat::repeat;
     pub use result::result;
+    pub use retry::retry;
     pub use with_ctx::with_ctx;
 }
 
