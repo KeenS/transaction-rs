@@ -1,16 +1,16 @@
 //! # Zero-cost transaction abstraction in Rust
-//! This crate abstracts over transactions like STM, SQL transactions and so on.
-//! It is composable via combinators and does DI of transactions.
+//! This crate abstracts over transactions like STM, SQL transactions and so
+//! on. It is composable via combinators and does DI of transactions.
 //!
-//! The basic idea is representing contracts of "this computation must be run" as
-//! types. The trait `Transaction` represents o sequence of computation that must
-//! be run under a transaction. And transactions are composable (sequencable)
-//! using `then`, `and_then`, `or_else`, hence you can use it like values wrapped
-//! in `Result`.Since it represents computation to be run in data, some types
-//! respond to control operators are provided: `abort` for `?` `repeat` for `for`
-//! and `branch` for (join point of) `if` and so on.
 //!
-//! As all the combinators have its own result type, no dispatches are done at
+//! The basic idea is representing contracts of "this computation must be run"
+//! as types. The trait `Transaction` represents o sequence of computation that
+//! must be run under a transaction. And transactions are composable
+//! (sequencable) using `then`, `and_then`, `or_else`, hence you can use it
+//! like values wrapped in `Result`.Since it represents computation to be run
+//! in data, some types respond to control operators are provided: `abort` for
+//! `?` `repeat` for `for` and `branch` for (join point of) `if` and so on. As
+//! all the combinators have its own result type, no dispatches are done at
 //! execution time thus it is zero-cost.
 //!
 //! Another feature is it does DI of transaction. For database transaction, it
@@ -28,9 +28,14 @@
 //! # struct FooError;
 //! # #[derive(Clone)]struct User;
 //!
-//! // Since current rust doesn't support `impl Trait`, you need to make a trait box
+//! // Since current rust doesn't support `impl Trait`, you need to make a
+//! // trait box
 //! // to return a trait value from a function.
-//! type BoxTx<'a, T> = Box<Transaction<Ctx = FooConnection, Item = T, Err = FooError> + 'a>;
+//! type BoxTx<'a, T> = Box<Transaction<
+//!                           Ctx = FooConnection,
+//!                           Item = T,
+//!                           Err =FooError>
+//!                         + 'a>;
 //!
 //! fn find_user<'a>(id: i64) -> BoxTx<'a, Option<User>> {
 //!     // connection is inejected from the context
@@ -57,8 +62,8 @@
 //!             None =>
 //!                 // to return a leaf transaction, use `ok`, `err` or `result`
 //!                 ok(None)
-//!                 // to return from a branch (or, to match types at join point),
-//!                 //  use `branch` API
+//!                 // to return from a branch (or, to match types at join
+//!                 // point), use `branch` API
 //!                 .branch()
 //!                 // use `first` in the first arm of the brnach
 //!                 .first(),
@@ -81,15 +86,15 @@ use std::marker::PhantomData;
 pub mod mdo;
 
 pub mod prelude {
-    pub use super::{Transaction, result, ok, join_vec, err, lazy, with_ctx, repeat};
+    pub use super::{Transaction, err, join_vec, lazy, ok, repeat, result, with_ctx};
 }
 
-/// An abstract transaction.
-/// Transactions sharing the same `Ctx` can be composed with combinators.
-/// When the transaction return an error, it means the transaction is failed.
-/// Some runners may abort the transaction and the other may retry the computation.
-/// Thus all the computation should be idempotent (of cause, except operations using context).
-/// Note that this transaction is not executed until it is `run`.
+/// An abstract transaction. Transactions sharing the same `Ctx` can be
+/// composed with combinators. When the transaction return an error, it means
+/// the transaction is failed. Some runners may abort the transaction and the
+/// other may retry the computation. Thus all the computation should be
+/// idempotent (of cause, except operations using context). Note that this
+/// transaction is not executed until it is `run`.
 #[must_use]
 pub trait Transaction {
     /// The contxt type (i.e. transaction type) of the transaction
@@ -99,7 +104,8 @@ pub trait Transaction {
     /// The error type of the transaction
     type Err;
 
-    /// Run the transaction. This will called by transaction runner rather than user by hand.
+    /// Run the transaction. This will called by transaction runner rather than
+    /// user by hand.
     fn run(&self, ctx: &mut Self::Ctx) -> Result<Self::Item, Self::Err>;
 
     /// Box the transaction
@@ -135,7 +141,8 @@ pub trait Transaction {
 
 
 
-    /// Take the previous successful value of computation and do another computation
+    /// Take the previous successful value of computation and do another
+    /// computation
     fn and_then<F, B>(self, f: F) -> AndThen<Self, F, B>
     where
         B: IntoTransaction<Self::Ctx, Err = Self::Err>,
@@ -174,7 +181,8 @@ pub trait Transaction {
         }
     }
 
-    /// Take the previous successfull value of computation and abort the transaction.
+    /// Take the previous successfull value of computation and abort the
+    /// transaction.
     fn abort<T, F>(self, f: F) -> Abort<Self, T, F>
     where
         F: Fn(Self::Item) -> Self::Err,
