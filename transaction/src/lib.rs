@@ -9,9 +9,9 @@
 //! (sequencable) using `then`, `and_then`, `or_else`, hence you can use it
 //! like values wrapped in `Result`.Since it represents computation to be run
 //! in data, some types respond to control operators are provided: `abort` for
-//! `?` `repeat` for `for` and `branch` for (join point of) `if` and so on. As
-//! all the combinators have its own result type, no dispatches are done at
-//! execution time thus it is zero-cost.
+//! `?`, `repeat` for `for`, `loop_fn` for `loop` and `branch` for (join point
+//! of) `if` and so on. As all the combinators have its own result type, no
+//! dispatches are done at execution time thus it is zero-cost.
 //!
 //! Another feature is it does DI of transaction. For database transaction, it
 //! means it injects DB connection from the context.
@@ -87,6 +87,7 @@ pub mod prelude {
     pub use err::err;
     pub use join_all::join_all;
     pub use lazy::lazy;
+    pub use loop_fn::loop_fn;
     pub use ok::ok;
     pub use repeat::repeat;
     pub use result::result;
@@ -108,6 +109,7 @@ mod join4;
 mod branch;
 mod branch3;
 mod branch4;
+mod loop_fn;
 mod repeat;
 mod retry;
 mod result;
@@ -128,6 +130,7 @@ pub use join3::*;
 pub use join4::*;
 pub use join_all::*;
 pub use lazy::*;
+pub use loop_fn::*;
 pub use map::*;
 pub use map_err::*;
 pub use ok::*;
