@@ -195,6 +195,18 @@ pub trait Transaction {
         }
     }
 
+    /// Try to abort the transaction
+    fn try_abort<F, B>(self, f: F) -> TryAbort<Self, F, B>
+    where
+        F: Fn(Self::Item) -> Result<B, Self::Err>,
+        Self: Sized,
+    {
+        TryAbort {
+            tx: self,
+            f: f,
+            _phantom: PhantomData,
+        }
+    }
 
     /// Recover from an error
     fn recover<T, F>(self, f: F) -> Recover<Self, T, F>
@@ -209,6 +221,18 @@ pub trait Transaction {
         }
     }
 
+    /// Try to recover from an error
+    fn try_recover<F, B>(self, f: F) -> TryRecover<Self, F, B>
+    where
+        F: Fn(Self::Item) -> Result<B, Self::Err>,
+        Self: Sized,
+    {
+        TryRecover {
+            tx: self,
+            f: f,
+            _phantom: PhantomData,
+        }
+    }
 
     /// join 2 indepndant transactions
     fn join<B>(self, b: B) -> Join<Self, B::Tx>
@@ -520,6 +544,13 @@ pub struct Abort<Tx, T, F> {
     _phantom: PhantomData<T>,
 }
 
+#[derive(Debug)]
+#[must_use]
+pub struct TryAbort<Tx, F, B> {
+    tx: Tx,
+    f: F,
+    _phantom: PhantomData<B>,
+}
 
 /// The result of `recover`
 #[derive(Debug)]
@@ -530,6 +561,14 @@ pub struct Recover<Tx, T, F> {
     _phantom: PhantomData<T>,
 }
 
+/// The result of `try_recover`
+#[derive(Debug)]
+#[must_use]
+pub struct TryRecover<Tx, F, B> {
+    tx: Tx,
+    f: F,
+    _phantom: PhantomData<B>,
+}
 
 /// The result of `join`
 #[derive(Debug)]
@@ -817,6 +856,23 @@ where
     }
 }
 
+impl<Tx, F, B> Transaction for TryAbort<Tx, F, B>
+where
+    Tx: Transaction,
+    F: Fn(Tx::Item) -> Result<B, Tx::Err>,
+{
+    type Ctx = Tx::Ctx;
+    type Item = B;
+    type Err = Tx::Err;
+
+    fn run(&self, ctx: &mut Self::Ctx) -> Result<Self::Item, Self::Err> {
+        let TryAbort { ref tx, ref f, .. } = *self;
+        match tx.run(ctx) {
+            Ok(r) => f(r),
+            Err(e) => Err(e),
+        }
+    }
+}
 
 impl<Tx, F, T> Transaction for Recover<Tx, T, F>
 where
@@ -836,6 +892,23 @@ where
     }
 }
 
+impl<Tx, F, B> Transaction for TryRecover<Tx, F, B>
+where
+    Tx: Transaction,
+    F: Fn(Tx::Err) -> Result<Tx::Item, B>,
+{
+    type Ctx = Tx::Ctx;
+    type Item = Tx::Item;
+    type Err = B;
+
+    fn run(&self, ctx: &mut Self::Ctx) -> Result<Self::Item, Self::Err> {
+        let TryRecover { ref tx, ref f, .. } = *self;
+        match tx.run(ctx) {
+            Ok(r) => Ok(r),
+            Err(e) => f(e),
+        }
+    }
+}
 
 impl<Tx1, Tx2> Transaction for Join<Tx1, Tx2>
 where
