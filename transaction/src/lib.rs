@@ -267,8 +267,6 @@ pub trait Transaction {
     {
         Branch4Builder(self)
     }
-
-    // retry
 }
 
 /// types than can be converted into transaction
@@ -423,12 +421,25 @@ where
     }
 }
 
-pub fn repeat<F, Ctx, Tx>(n: usize, f: F) -> Repeat<F, Tx>
+pub fn repeat<Ctx, F, Tx>(n: usize, f: F) -> Repeat<Ctx, F, Tx>
 where
     Tx: IntoTransaction<Ctx>,
     F: Fn(usize) -> Tx,
 {
     Repeat {
+        n: n,
+        f: f,
+        _phantom: PhantomData,
+    }
+}
+
+
+pub fn retry<Ctx, F, Tx>(n: usize, f: F) -> Retry<Ctx, F, Tx>
+where
+    Tx: IntoTransaction<Ctx>,
+    F: Fn(usize) -> Tx,
+{
+    Retry {
         n: n,
         f: f,
         _phantom: PhantomData,
@@ -628,10 +639,19 @@ pub enum Branch4<Tx1, Tx2, Tx3, Tx4> {
 /// The result of `repeat`
 #[derive(Debug)]
 #[must_use]
-pub struct Repeat<F, Tx> {
+pub struct Repeat<Ctx, F, Tx> {
     n: usize,
     f: F,
-    _phantom: PhantomData<Tx>,
+    _phantom: PhantomData<(Tx, Ctx)>,
+}
+
+/// The result of `retry`
+#[derive(Debug)]
+#[must_use]
+pub struct Retry<Ctx, F, Tx> {
+    n: usize,
+    f: F,
+    _phantom: PhantomData<(Tx, Ctx)>,
 }
 
 /// The result of `result`
@@ -972,21 +992,44 @@ where
 }
 
 
-impl<F, Tx> Transaction for Repeat<F, Tx>
+impl<Ctx, F, Tx> Transaction for Repeat<Ctx, F, Tx>
 where
     F: Fn(usize) -> Tx,
-    Tx: Transaction,
+    Tx: IntoTransaction<Ctx>,
 {
-    type Ctx = Tx::Ctx;
+    type Ctx = Ctx;
     type Item = Vec<Tx::Item>;
     type Err = Tx::Err;
     fn run(&self, ctx: &mut Self::Ctx) -> Result<Self::Item, Self::Err> {
         let Repeat { ref n, ref f, .. } = *self;
         let mut ret = Vec::new();
         for i in 0..*n {
-            ret.push(f(i).run(ctx)?)
+            let t = f(i).into_transaction().run(ctx)?;
+            ret.push(t);
         }
         Ok(ret)
+    }
+}
+
+impl<Ctx, F, Tx> Transaction for Retry<Ctx, F, Tx>
+where
+    F: Fn(usize) -> Tx,
+    Tx: IntoTransaction<Ctx>,
+{
+    type Ctx = Ctx;
+    type Item = Tx::Item;
+    type Err = Vec<Tx::Err>;
+    fn run(&self, ctx: &mut Self::Ctx) -> Result<Self::Item, Self::Err> {
+        let Retry { ref n, ref f, .. } = *self;
+        let mut ret = Vec::new();
+        for i in 0..*n {
+            let t = match f(i).into_transaction().run(ctx) {
+                Ok(t) => return Ok(t),
+                Err(e) => e,
+            };
+            ret.push(t);
+        }
+        Err(ret)
     }
 }
 
