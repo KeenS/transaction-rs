@@ -6,7 +6,7 @@ license = "MIT"
 description = "transaction abstraction of stm"
 readme = "README.md"
 documentation = "http://docs.rs/transaction-stm/0.2.0/transaction-stm/"
-repository = "https://github.com/KeenS/transaction"
+repository = "https://github.com/KeenS/transaction-rs"
 keywords = ["transaction", "stm"]
 categories = ["rust-patterns", "concurrency"]
 
