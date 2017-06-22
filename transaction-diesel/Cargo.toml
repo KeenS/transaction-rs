@@ -6,7 +6,7 @@ license = "MIT"
 description = "transaction abstraction of diesel"
 readme = "README.md"
 documentation = "http://docs.rs/transaction-diesel/0.2.0/transaction-diesel/"
-repository = "https://github.com/KeenS/transaction"
+repository = "https://github.com/KeenS/transaction-rs"
 keywords = ["transaction", "diesel"]
 categories = ["rust-patterns"]
 

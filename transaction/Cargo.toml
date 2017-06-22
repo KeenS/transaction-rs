@@ -6,7 +6,7 @@ license = "MIT"
 description = "transaction abstraction library (a.k.a. transaction monad)"
 readme = "README.md"
 documentation = "http://docs.rs/transaction/0.2.0/transaction/"
-repository = "https://github.com/KeenS/transaction"
+repository = "https://github.com/KeenS/transaction-rs"
 keywords = ["transaction"]
 categories = ["rust-patterns"]
 
