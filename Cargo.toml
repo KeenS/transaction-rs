@@ -6,5 +6,5 @@ members = [
         "transaction-diesel/examples/simple-crud"]
 
 [replace]
-"transaction:0.2.0" = { path = "transaction" }
+"transaction:0.2.1" = { path = "transaction" }
 "transaction-diesel:0.2.0" = { path = "transaction-diesel" }
