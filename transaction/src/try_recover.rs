@@ -5,7 +5,7 @@ use {IntoTransaction, Transaction};
 pub fn try_recover<Ctx, A, F, B>(a: A, f: F) -> TryRecover<A::Tx, F, B>
 where
     A: IntoTransaction<Ctx>,
-    F: Fn(A::Item) -> Result<B, A::Err>,
+    F: Fn(A::Err) -> Result<A::Item, B>,
 {
     TryRecover {
         tx: a.into_transaction(),

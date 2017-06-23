@@ -247,7 +247,7 @@ pub trait Transaction {
     /// Recover from an error
     fn recover<T, F>(self, f: F) -> Recover<Self, T, F>
     where
-        F: Fn(Self::Item) -> Self::Err,
+        F: Fn(Self::Err) -> Self::Item,
         Self: Sized,
     {
         recover(self, f)
@@ -256,7 +256,7 @@ pub trait Transaction {
     /// Try to recover from an error
     fn try_recover<F, B>(self, f: F) -> TryRecover<Self, F, B>
     where
-        F: Fn(Self::Item) -> Result<B, Self::Err>,
+        F: Fn(Self::Err) -> Result<Self::Item, B>,
         Self: Sized,
     {
         try_recover(self, f)
