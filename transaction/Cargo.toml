@@ -1,11 +1,11 @@
 [package]
 authors = ["Sunrin SHIMURA (keen) <3han5chou7@gmail.com>"]
 name = "transaction"
-version = "0.2.0"
+version = "0.2.1"
 license = "MIT"
 description = "transaction abstraction library (a.k.a. transaction monad)"
 readme = "README.md"
-documentation = "http://docs.rs/transaction/0.2.0/transaction/"
+documentation = "http://docs.rs/transaction/0.2.1/transaction/"
 repository = "https://github.com/KeenS/transaction-rs"
 keywords = ["transaction"]
 categories = ["rust-patterns"]
