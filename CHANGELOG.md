@@ -1,3 +1,9 @@
+# unreleased
+
+## transaction-diesel
+
+* add an example than does not use combinators
+
 # 0.2.0 2017-06-21
 
 ## transaction
