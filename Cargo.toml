@@ -3,7 +3,9 @@ members = [
         "transaction",
         "transaction-diesel",
         "transaction-stm",
-        "transaction-diesel/examples/simple-crud"]
+        "transaction-diesel/examples/simple-crud",
+        "transaction-diesel/examples/simple-crud-combinator"
+        ]
 
 [replace]
 "transaction:0.2.1" = { path = "transaction" }

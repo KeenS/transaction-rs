@@ -1,0 +1,15 @@
+postgres-data:
+  image: busybox
+  volumes:
+      - /var/lib/postgresql/txdiesel-data
+  container_name: txdiesel-postgres-datastore
+
+postgresql:
+  image: postgres
+  environment:
+    POSTGRES_USER: user
+    POSTGRES_PASSWORD: password
+  ports:
+    - "5432:5432"
+  volumes_from:
+      - postgres-data

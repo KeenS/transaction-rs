@@ -12,6 +12,7 @@ mod db;
 
 use transaction::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::result::Error;
 
 pub fn establish_connection() -> PgConnection {
     use dotenv::dotenv;
@@ -27,45 +28,37 @@ pub fn establish_connection() -> PgConnection {
 fn main() {
     let conn = establish_connection();
     // composed computation of DB operations
-    let tx = db::create_user("keen")
-    // Transactions can be sequenced using `and_then`
-        .and_then(move |user| {
+    // you can get transaction context using `with_ctx`
+    let tx = with_ctx(|ctx| -> Result<(), Error> {
+        // if you have context, you can run a transaction using `run`.
+        // Since it returns a `Result` value, `?` operators can be applied;
+        let user = db::create_user("keen").run(ctx)?;
         println!("created user: {:?}", user);
-        db::update_user(user.id, "KeenS")
-                // to pass values by move, you need to inject them by `join`
-            .join(ok(user))
-            .and_then(|(res, user)| match res {
-                None => {
-                    println!("user not found");
-                    // when you branch and return different `Transaction`s it is an error. Some operation is needed.
-                    // One option is boxing all the transactions returning from all the branches.
-                    // Another option is using `branch` API. Use `first` in one branch and `second` in the other branch.
-                    ok(()).branch().first()
-                }
-                Some(()) => db::find_user(user.id)
-                .and_then(move |maybe_updated_user| {
-                    match maybe_updated_user {
-                        None => {
-                            println!("user not found");
-                            ok(()).branch().first()
-                        },
-                        Some(updated_user) => {
-                            println!("updated user: {:?}", updated_user);
-                            db::delete_user(updated_user.id)
-                                .map(|res| match res {
-                                    None => {
-                                        println!("user not found");
-                                    },
-                                    Some(()) => ()
-                                })
-                                .branch().second()
-                        }
-                    }
-                }).branch().second(),
+        let res = db::update_user(user.id, "KeenS").run(ctx)?;
+        match res {
+            None => {
+                println!("user not found");
+                return Ok(());
+            }
+            Some(()) => (),
+        };
+        let updated_user = match db::find_user(user.id).run(ctx)? {
+            None => {
+                println!("user not found");
+                return Ok(());
+            }
+            Some(u) => u,
+        };
 
-            })
+        println!("updated user: {:?}", updated_user);
+        match db::delete_user(updated_user.id).run(ctx)? {
+            None => {
+                println!("user not found");
+            }
+            Some(()) => (),
+        };
+        Ok(())
     });
-
     // to run the composed computation, use `transaction_diesel::run`.
     transaction_diesel::run(&conn, tx).unwrap()
 }

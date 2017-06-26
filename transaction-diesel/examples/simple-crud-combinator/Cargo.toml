@@ -1,0 +1,17 @@
+[package]
+authors = ["Sunrin SHIMURA (keen) <3han5chou7@gmail.com>"]
+name = "simple-crud-combinator"
+version = "0.1.0"
+
+[dependencies]
+dotenv = "0.10.0"
+transaction = "0.2.1"
+transaction-diesel = {path ="../../"}
+
+[dependencies.diesel]
+features = ["postgres"]
+version = "0.13.0"
+
+[dependencies.diesel_codegen]
+features = ["postgres"]
+version = "0.13.0"
